@@ -1,0 +1,26 @@
+{
+  "name": "podcastindex-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the Podcast Index API — search podcasts, track appearances, monitor trending shows, and check feed health.",
+  "type": "module",
+  "bin": {
+    "podcastindex-mcp": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "npx tsc && node -e \"try{require('fs').chmodSync('build/index.js','755')}catch(e){}\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  },
+  "license": "MIT"
+}
