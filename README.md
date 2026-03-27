@@ -7,8 +7,6 @@ Connect Claude to the Podcast Index API. Search podcasts, track appearances, mon
 [![GitHub stars](https://img.shields.io/github/stars/conorbronsdon/podcastindex-mcp?style=social)](https://github.com/conorbronsdon/podcastindex-mcp/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/podcastindex-mcp?style=flat-square)](https://www.npmjs.com/package/podcastindex-mcp)
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Conor_Bronsdon-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/conorbronsdon/)
 [![Podcast](https://img.shields.io/badge/Podcast-Chain_of_Thought-purple?style=flat-square)](https://chainofthought.show)
 [![X](https://img.shields.io/badge/X-@ConorBronsdon-black?style=flat-square&logo=x)](https://x.com/ConorBronsdon)
 
