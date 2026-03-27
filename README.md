@@ -4,7 +4,7 @@
 
 Connect Claude to the Podcast Index API. Search podcasts, track appearances, monitor trends.
 
-[![GitHub stars](https://img.shields.io/github/stars/conorbronsdon/podcastindex-mcp?style=flat-square)](https://github.com/conorbronsdon/podcastindex-mcp/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/conorbronsdon/podcastindex-mcp?style=social)](https://github.com/conorbronsdon/podcastindex-mcp/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/podcastindex-mcp?style=flat-square)](https://www.npmjs.com/package/podcastindex-mcp)
 
