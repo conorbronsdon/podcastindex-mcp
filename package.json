@@ -12,6 +12,8 @@
   "scripts": {
     "build": "npx tsc && node -e \"try{require('fs').chmodSync('build/index.js','755')}catch(e){}\"",
     "prepare": "npm run build",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
     "watch": "tsc --watch"
   },
   "dependencies": {
@@ -20,7 +22,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.2"
   },
   "license": "MIT"
 }
