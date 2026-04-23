@@ -1,3 +1,7 @@
+function isPlainObject(args: unknown): args is object {
+  return args !== null && typeof args === "object" && !Array.isArray(args);
+}
+
 export interface SearchByPersonArgs {
   q: string;
   max?: number;
@@ -5,7 +9,7 @@ export interface SearchByPersonArgs {
 }
 
 export function isSearchByPersonArgs(args: unknown): args is SearchByPersonArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { q, max, fulltext } = args as SearchByPersonArgs;
   return (
     typeof q === "string" &&
@@ -22,7 +26,7 @@ export interface SearchByTermArgs {
 }
 
 export function isSearchByTermArgs(args: unknown): args is SearchByTermArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { q, max, clean, fulltext } = args as SearchByTermArgs;
   return (
     typeof q === "string" &&
@@ -37,7 +41,7 @@ export interface PodcastByFeedUrlArgs {
 }
 
 export function isPodcastByFeedUrlArgs(args: unknown): args is PodcastByFeedUrlArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { url } = args as PodcastByFeedUrlArgs;
   return typeof url === "string";
 }
@@ -47,7 +51,7 @@ export interface PodcastByFeedIdArgs {
 }
 
 export function isPodcastByFeedIdArgs(args: unknown): args is PodcastByFeedIdArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { id } = args as PodcastByFeedIdArgs;
   return typeof id === "number";
 }
@@ -60,7 +64,7 @@ export interface TrendingPodcastsArgs {
 }
 
 export function isTrendingPodcastsArgs(args: unknown): args is TrendingPodcastsArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { max, lang, cat, since } = args as TrendingPodcastsArgs;
   return (
     (max === undefined || typeof max === "number") &&
@@ -78,7 +82,7 @@ export interface EpisodesByFeedIdArgs {
 }
 
 export function isEpisodesByFeedIdArgs(args: unknown): args is EpisodesByFeedIdArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { id, max, since, fulltext } = args as EpisodesByFeedIdArgs;
   return (
     typeof id === "number" &&
@@ -96,7 +100,7 @@ export interface RecentEpisodesArgs {
 }
 
 export function isRecentEpisodesArgs(args: unknown): args is RecentEpisodesArgs {
-  if (!args || typeof args !== "object") return false;
+  if (!isPlainObject(args)) return false;
   const { max, excludeString, before, fulltext } = args as RecentEpisodesArgs;
   return (
     (max === undefined || typeof max === "number") &&
@@ -109,5 +113,5 @@ export function isRecentEpisodesArgs(args: unknown): args is RecentEpisodesArgs 
 export interface CategoriesListArgs {}
 
 export function isCategoriesListArgs(args: unknown): args is CategoriesListArgs {
-  return args !== null && typeof args === "object";
+  return isPlainObject(args);
 }

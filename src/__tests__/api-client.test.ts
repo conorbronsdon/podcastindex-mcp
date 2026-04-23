@@ -38,16 +38,22 @@ describe("PodcastIndexApiClient", () => {
     });
 
     it("generates SHA1 hash from key + secret + timestamp", async () => {
-      const now = Math.floor(Date.now() / 1000);
+      const fixedNowMs = 1_700_000_000_000;
+      const nowSpy = vi.spyOn(Date, "now").mockReturnValue(fixedNowMs);
+      const now = Math.floor(fixedNowMs / 1000);
       const expectedHash = crypto
         .createHash("sha1")
         .update("test-key" + "test-secret" + now)
         .digest("hex");
 
-      await client.categoriesList();
-      const headers = mockGet.mock.calls[0][1].headers;
-      // The hash should match (within 1 second tolerance)
-      expect(headers["Authorization"]).toMatch(/^[a-f0-9]{40}$/);
+      try {
+        await client.categoriesList();
+        const headers = mockGet.mock.calls[0][1].headers;
+        expect(headers["X-Auth-Date"]).toBe(String(now));
+        expect(headers["Authorization"]).toBe(expectedHash);
+      } finally {
+        nowSpy.mockRestore();
+      }
     });
   });
 

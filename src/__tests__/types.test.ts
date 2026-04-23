@@ -83,6 +83,9 @@ describe("isTrendingPodcastsArgs", () => {
   it("rejects null", () => {
     expect(isTrendingPodcastsArgs(null)).toBe(false);
   });
+  it("rejects arrays", () => {
+    expect(isTrendingPodcastsArgs([])).toBe(false);
+  });
 });
 
 describe("isEpisodesByFeedIdArgs", () => {
@@ -107,6 +110,9 @@ describe("isRecentEpisodesArgs", () => {
   it("rejects wrong type for excludeString", () => {
     expect(isRecentEpisodesArgs({ excludeString: 123 })).toBe(false);
   });
+  it("rejects arrays", () => {
+    expect(isRecentEpisodesArgs([])).toBe(false);
+  });
 });
 
 describe("isCategoriesListArgs", () => {
@@ -118,5 +124,8 @@ describe("isCategoriesListArgs", () => {
   });
   it("rejects non-object", () => {
     expect(isCategoriesListArgs("string")).toBe(false);
+  });
+  it("rejects arrays", () => {
+    expect(isCategoriesListArgs([])).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { ToolHandlers, TOOLS } from "../tool-handlers.js";
 import { PodcastIndexApiClient } from "../api-client.js";
@@ -20,6 +20,10 @@ let handlers: ToolHandlers;
 beforeEach(() => {
   vi.clearAllMocks();
   handlers = new ToolHandlers(mockApiClient as unknown as PodcastIndexApiClient);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("TOOLS", () => {
@@ -122,12 +126,15 @@ describe("ToolHandlers.handleToolCall", () => {
 
   describe("unknown tool", () => {
     it("throws McpError with MethodNotFound", async () => {
-      await expect(handlers.handleToolCall("nonexistent_tool", {})).rejects.toThrow(McpError);
+      let thrown: unknown;
       try {
         await handlers.handleToolCall("nonexistent_tool", {});
+        throw new Error("Expected handleToolCall to throw");
       } catch (e) {
-        expect((e as McpError).code).toBe(ErrorCode.MethodNotFound);
+        thrown = e;
       }
+      expect(thrown).toBeInstanceOf(McpError);
+      expect((thrown as McpError).code).toBe(ErrorCode.MethodNotFound);
     });
   });
 
