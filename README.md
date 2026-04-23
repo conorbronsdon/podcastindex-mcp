@@ -111,6 +111,12 @@ npm run watch
 3. Add the tool definition and handler to `src/tool-handlers.ts`
 4. Rebuild with `npm run build`
 
+---
+
+## Disclaimer
+
+*All views, opinions, and statements expressed on this account are solely my own and are made in my personal capacity. They do not reflect, and should not be construed as reflecting, the views, positions, or policies of Modular. This account is not affiliated with, authorized by, or endorsed by Modular in any way.*
+
 ## License
 
 MIT
