@@ -128,4 +128,8 @@ describe("isCategoriesListArgs", () => {
   it("rejects arrays", () => {
     expect(isCategoriesListArgs([])).toBe(false);
   });
+  it("rejects non-plain objects (Date, Map)", () => {
+    expect(isCategoriesListArgs(new Date())).toBe(false);
+    expect(isCategoriesListArgs(new Map())).toBe(false);
+  });
 });

@@ -1,5 +1,8 @@
 function isPlainObject(args: unknown): args is object {
-  return args !== null && typeof args === "object" && !Array.isArray(args);
+  if (args === null || typeof args !== "object") return false;
+  if (Object.prototype.toString.call(args) !== "[object Object]") return false;
+  const prototype = Object.getPrototypeOf(args);
+  return prototype === Object.prototype || prototype === null;
 }
 
 export interface SearchByPersonArgs {
