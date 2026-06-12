@@ -12,7 +12,8 @@ MCP server for the Podcast Index API — search podcasts, track appearances, mon
 ## Key constraints
 - Requires `PODCASTINDEX_API_KEY` and `PODCASTINDEX_API_SECRET` env vars at runtime
 - Tests must mock HTTP — never hit the real Podcast Index API
-- Uses older MCP SDK (0.6.0) and axios for HTTP
+- Uses MCP SDK 1.x and axios for HTTP; all 8 tools are read-only and declare `annotations: { readOnlyHint: true }` (enforced by a completeness test)
+- CI runs `npm audit --audit-level=high` — keep dependencies free of high-severity advisories
 
 ## Development
 ```bash
