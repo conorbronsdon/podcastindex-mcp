@@ -14,6 +14,17 @@ Connect Claude to the Podcast Index API. Search podcasts, track appearances, mon
 
 ---
 
+![Demo: search_by_person tool call and response](docs/demo.gif)
+
+The results shown in the demo above are sample data, not real Podcast Index responses.
+
+## About
+
+Built and maintained by [Conor Bronsdon](https://github.com/conorbronsdon) for the [Chain of Thought](https://chainofthought.show) podcast production workflow, where it surfaces guest appearances and checks feed health during research. Conor hosts Chain of Thought, a show about AI infrastructure and how practitioners actually build with it. More tools for creators live in [ai-tools-for-creators](https://github.com/conorbronsdon/ai-tools-for-creators). Find Conor on X at [@ConorBronsdon](https://x.com/ConorBronsdon).
+
+**Sibling MCP servers:**
+- [Transistor-MCP](https://github.com/conorbronsdon/Transistor-MCP): manage podcast episodes, analytics, and transcripts on Transistor.fm
+- [substack-mcp](https://github.com/conorbronsdon/substack-mcp): read posts and manage Substack drafts
 
 ## Prerequisites
 
@@ -110,6 +121,10 @@ npm run watch
 2. Add type guard and argument types to `src/types.ts`
 3. Add the tool definition and handler to `src/tool-handlers.ts`
 4. Rebuild with `npm run build`
+
+## Contributing
+
+Issues and pull requests are welcome. If there is a Podcast Index endpoint you want exposed as a tool, open an issue describing the use case, or follow the steps above and open a PR. Bug reports should include the tool name and the arguments you passed.
 
 ---
 

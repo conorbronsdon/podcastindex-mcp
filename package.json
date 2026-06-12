@@ -3,8 +3,26 @@
   "version": "0.1.0",
   "description": "MCP server for the Podcast Index API — search podcasts, track appearances, monitor trending shows, and check feed health.",
   "type": "module",
+  "mcpName": "io.github.conorbronsdon/podcastindex-mcp",
+  "author": "Conor Bronsdon (https://conorbronsdon.com)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/conorbronsdon/podcastindex-mcp.git"
+  },
+  "homepage": "https://github.com/conorbronsdon/podcastindex-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/conorbronsdon/podcastindex-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "podcast",
+    "podcast-index",
+    "claude",
+    "ai-agents"
+  ],
   "bin": {
-    "podcastindex-mcp": "./build/index.js"
+    "podcastindex-mcp": "build/index.js"
   },
   "files": [
     "build"
@@ -12,6 +30,7 @@
   "scripts": {
     "build": "npx tsc && node -e \"try{require('fs').chmodSync('build/index.js','755')}catch(e){}\"",
     "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "watch": "tsc --watch"
