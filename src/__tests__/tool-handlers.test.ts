@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { ToolHandlers, TOOLS } from "../tool-handlers.js";
+import {
+  ToolHandlers,
+  TOOLS,
+  MISSING_CREDENTIALS_MESSAGE,
+} from "../tool-handlers.js";
 import { PodcastIndexApiClient } from "../api-client.js";
 
 // Create a mock API client
@@ -24,6 +28,28 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("missing credentials (lazy auth)", () => {
+  it("fails per-tool-call with a clear McpError when credentials are absent", async () => {
+    const keyless = new ToolHandlers(
+      mockApiClient as unknown as PodcastIndexApiClient,
+      false
+    );
+    await expect(
+      keyless.handleToolCall("search_by_term", { q: "ai" })
+    ).rejects.toMatchObject({
+      code: ErrorCode.InvalidRequest,
+      message: expect.stringContaining(MISSING_CREDENTIALS_MESSAGE),
+    });
+    expect(mockApiClient.searchByTerm).not.toHaveBeenCalled();
+  });
+
+  it("defaults to credentialed behavior when flag is omitted", async () => {
+    const result = await handlers.handleToolCall("search_by_term", { q: "ai" });
+    expect(result.isError).toBeUndefined();
+    expect(mockApiClient.searchByTerm).toHaveBeenCalled();
+  });
 });
 
 describe("TOOLS", () => {

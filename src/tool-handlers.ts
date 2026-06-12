@@ -213,14 +213,23 @@ export const TOOLS = [
   },
 ];
 
+export const MISSING_CREDENTIALS_MESSAGE =
+  "PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET environment variables are required. " +
+  "Get free API credentials at https://api.podcastindex.org/, set both variables, and restart the server.";
+
 export class ToolHandlers {
   private apiClient: PodcastIndexApiClient;
+  private hasCredentials: boolean;
 
-  constructor(apiClient: PodcastIndexApiClient) {
+  constructor(apiClient: PodcastIndexApiClient, hasCredentials = true) {
     this.apiClient = apiClient;
+    this.hasCredentials = hasCredentials;
   }
 
   async handleToolCall(name: string, args: unknown) {
+    if (!this.hasCredentials) {
+      throw new McpError(ErrorCode.InvalidRequest, MISSING_CREDENTIALS_MESSAGE);
+    }
     try {
       switch (name) {
         case "search_by_person": {

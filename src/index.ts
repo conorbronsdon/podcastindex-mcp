@@ -9,12 +9,16 @@ import {
 import { PodcastIndexApiClient } from "./api-client.js";
 import { ToolHandlers, TOOLS } from "./tool-handlers.js";
 
-const API_KEY = process.env.PODCASTINDEX_API_KEY;
-const API_SECRET = process.env.PODCASTINDEX_API_SECRET;
+const API_KEY = process.env.PODCASTINDEX_API_KEY ?? "";
+const API_SECRET = process.env.PODCASTINDEX_API_SECRET ?? "";
 
 if (!API_KEY || !API_SECRET) {
-  throw new Error(
-    "PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET environment variables are required"
+  console.error(
+    "Warning: PODCASTINDEX_API_KEY and/or PODCASTINDEX_API_SECRET are not set. " +
+      "The server will start, but tool calls will fail until both are configured."
+  );
+  console.error(
+    "Get free API credentials at https://api.podcastindex.org/. See README.md."
   );
 }
 
@@ -35,8 +39,11 @@ class PodcastIndexServer {
       }
     );
 
-    const apiClient = new PodcastIndexApiClient(API_KEY!, API_SECRET!);
-    this.toolHandlers = new ToolHandlers(apiClient);
+    const apiClient = new PodcastIndexApiClient(API_KEY, API_SECRET);
+    this.toolHandlers = new ToolHandlers(
+      apiClient,
+      Boolean(API_KEY && API_SECRET)
+    );
     this.setupToolHandlers();
   }
 
