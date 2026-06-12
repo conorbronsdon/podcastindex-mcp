@@ -44,6 +44,28 @@ describe("TOOLS", () => {
     const names = TOOLS.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
   });
+
+  // ── Tool annotations (issue #2) ──────────────────────────────────────
+  // This server is 100% read-only: every tool is a lookup against the
+  // Podcast Index API. The completeness check below means a new tool
+  // cannot ship without an explicit readOnlyHint — if a write tool is
+  // ever added, this test must be replaced with per-tool classification.
+  it("completeness: every tool declares annotations with readOnlyHint:true", () => {
+    expect(TOOLS.length).toBeGreaterThan(0);
+    for (const tool of TOOLS) {
+      expect(tool.annotations, `${tool.name} must declare annotations`).toBeDefined();
+      expect(
+        tool.annotations.readOnlyHint,
+        `${tool.name} should be readOnlyHint:true (read-only server)`,
+      ).toBe(true);
+    }
+  });
+
+  it("no tool carries a destructive or non-read-only hint", () => {
+    for (const tool of TOOLS) {
+      expect(tool.annotations).toEqual({ readOnlyHint: true });
+    }
+  });
 });
 
 describe("ToolHandlers.handleToolCall", () => {

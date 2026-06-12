@@ -12,11 +12,23 @@ import {
   isCategoriesListArgs,
 } from "./types.js";
 
+/**
+ * Every tool in this server is a read-only lookup against the Podcast Index
+ * API — nothing mutates external state. Each TOOLS entry declares
+ * `annotations: READ_ONLY` so MCP clients can reason about side effects
+ * (and skip write-consent prompts); the completeness test in
+ * __tests__/tool-handlers.test.ts enforces that every tool carries it.
+ * If a write tool is ever added, switch to per-tool classification (see
+ * gws-mcp-server's buildAnnotations pattern) instead of weakening this.
+ */
+const READ_ONLY = { readOnlyHint: true } as const;
+
 export const TOOLS = [
   {
     name: "search_by_person",
     description:
       "Search for podcast episodes where a specific person appeared as host or guest. Returns episodes across all indexed podcasts — useful for tracking appearances beyond your own show.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -42,6 +54,7 @@ export const TOOLS = [
     name: "search_by_term",
     description:
       "Full-text search across all podcasts in the index. Search by topic, show name, or keyword to find relevant podcasts.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -71,6 +84,7 @@ export const TOOLS = [
     name: "podcast_by_feed_url",
     description:
       "Look up a podcast by its RSS feed URL. Returns feed ID, iTunes ID, categories, last update time, and feed health. Useful for checking if your podcast is properly indexed.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -86,6 +100,7 @@ export const TOOLS = [
     name: "podcast_by_feed_id",
     description:
       "Look up a podcast by its Podcast Index feed ID. Returns full metadata including categories, language, and feed health.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -101,6 +116,7 @@ export const TOOLS = [
     name: "trending_podcasts",
     description:
       "Get trending podcasts with optional filters for language and category. Useful for competitive intelligence and content planning.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -131,6 +147,7 @@ export const TOOLS = [
     name: "episodes_by_feed_id",
     description:
       "Get episodes for a specific podcast by its Podcast Index feed ID. Use podcast_by_feed_url first to get the feed ID.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -160,6 +177,7 @@ export const TOOLS = [
     name: "recent_episodes",
     description:
       "Get the most recent episodes across the entire Podcast Index. Useful for seeing what is being published right now in the ecosystem.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -187,6 +205,7 @@ export const TOOLS = [
   {
     name: "categories_list",
     description: "Get the full list of Podcast Index categories and their IDs.",
+    annotations: READ_ONLY,
     inputSchema: {
       type: "object" as const,
       properties: {},

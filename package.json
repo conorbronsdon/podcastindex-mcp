@@ -1,6 +1,6 @@
 {
   "name": "podcastindex-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for the Podcast Index API — search podcasts, track appearances, monitor trending shows, and check feed health.",
   "type": "module",
   "mcpName": "io.github.conorbronsdon/podcastindex-mcp",
@@ -36,8 +36,8 @@
     "watch": "tsc --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
-    "axios": "^1.7.9"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "axios": "^1.17.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

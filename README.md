@@ -82,6 +82,8 @@ Add to your project's `.mcp.json`:
 
 ## Tools
 
+This server is entirely read-only: every tool declares the MCP [tool annotation](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) `readOnlyHint: true`, so clients know no call mutates anything and can skip write-consent prompts.
+
 | Tool | Description |
 |------|-------------|
 | `search_by_person` | Search for episodes where a person appeared as host or guest. Returns matches across all indexed podcasts. |
