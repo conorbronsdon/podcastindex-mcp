@@ -29,7 +29,7 @@ npm test        # vitest run
 - `tool-handlers.test.ts` — Tool dispatch, error handling, TOOLS registry integrity
 
 ## Agent workflow
-- Always work on a branch. Never push directly to master.
-- Create PRs targeting master. CI must pass (lint + build + test on Node 20 and 22).
+- Always work on a branch. Never push directly to main.
+- Create PRs targeting main. CI must pass (lint + build + test on Node 20 and 22).
 - Keep changes focused — one feature or fix per PR.
 - Run `npm test` locally before pushing.
