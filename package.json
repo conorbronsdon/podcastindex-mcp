@@ -22,7 +22,7 @@
     "ai-agents"
   ],
   "bin": {
-    "podcastindex-mcp": "./build/index.js"
+    "podcastindex-mcp": "build/index.js"
   },
   "files": [
     "build"
