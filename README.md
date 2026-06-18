@@ -18,6 +18,10 @@ Connect Claude to the Podcast Index API. Search podcasts, track appearances, mon
 
 The results shown in the demo above are sample data, not real Podcast Index responses.
 
+<a href="https://glama.ai/mcp/servers/conorbronsdon/podcastindex-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/conorbronsdon/podcastindex-mcp/badge" alt="podcastindex-mcp MCP server" />
+</a>
+
 ## About
 
 Built and maintained by [Conor Bronsdon](https://github.com/conorbronsdon) for the [Chain of Thought](https://chainofthought.show) podcast production workflow, where it surfaces guest appearances and checks feed health during research. Conor hosts Chain of Thought, a show about AI infrastructure and how practitioners actually build with it. More tools for creators live in [ai-tools-for-creators](https://github.com/conorbronsdon/ai-tools-for-creators). Find Conor on X at [@ConorBronsdon](https://x.com/ConorBronsdon).
