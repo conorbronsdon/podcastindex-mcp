@@ -118,3 +118,126 @@ export interface CategoriesListArgs {}
 export function isCategoriesListArgs(args: unknown): args is CategoriesListArgs {
   return isPlainObject(args);
 }
+
+export interface SearchByTitleArgs {
+  q: string;
+  max?: number;
+  clean?: boolean;
+  fulltext?: boolean;
+}
+
+export function isSearchByTitleArgs(args: unknown): args is SearchByTitleArgs {
+  if (!isPlainObject(args)) return false;
+  const { q, max, clean, fulltext } = args as SearchByTitleArgs;
+  return (
+    typeof q === "string" &&
+    (max === undefined || typeof max === "number") &&
+    (clean === undefined || typeof clean === "boolean") &&
+    (fulltext === undefined || typeof fulltext === "boolean")
+  );
+}
+
+export interface EpisodeByIdArgs {
+  id: number;
+  fulltext?: boolean;
+}
+
+export function isEpisodeByIdArgs(args: unknown): args is EpisodeByIdArgs {
+  if (!isPlainObject(args)) return false;
+  const { id, fulltext } = args as EpisodeByIdArgs;
+  return typeof id === "number" && (fulltext === undefined || typeof fulltext === "boolean");
+}
+
+export interface EpisodesLiveArgs {
+  max?: number;
+}
+
+export function isEpisodesLiveArgs(args: unknown): args is EpisodesLiveArgs {
+  if (!isPlainObject(args)) return false;
+  const { max } = args as EpisodesLiveArgs;
+  return max === undefined || typeof max === "number";
+}
+
+export interface PodcastByItunesIdArgs {
+  id: number;
+}
+
+export function isPodcastByItunesIdArgs(args: unknown): args is PodcastByItunesIdArgs {
+  if (!isPlainObject(args)) return false;
+  const { id } = args as PodcastByItunesIdArgs;
+  return typeof id === "number";
+}
+
+export interface PodcastByGuidArgs {
+  guid: string;
+}
+
+export function isPodcastByGuidArgs(args: unknown): args is PodcastByGuidArgs {
+  if (!isPlainObject(args)) return false;
+  const { guid } = args as PodcastByGuidArgs;
+  return typeof guid === "string";
+}
+
+export interface ValueByFeedIdArgs {
+  id: number;
+}
+
+export function isValueByFeedIdArgs(args: unknown): args is ValueByFeedIdArgs {
+  if (!isPlainObject(args)) return false;
+  const { id } = args as ValueByFeedIdArgs;
+  return typeof id === "number";
+}
+
+export interface ValueByFeedUrlArgs {
+  url: string;
+}
+
+export function isValueByFeedUrlArgs(args: unknown): args is ValueByFeedUrlArgs {
+  if (!isPlainObject(args)) return false;
+  const { url } = args as ValueByFeedUrlArgs;
+  return typeof url === "string";
+}
+
+export interface RecentFeedsArgs {
+  max?: number;
+  since?: number;
+  lang?: string;
+  cat?: string;
+  notcat?: string;
+}
+
+export function isRecentFeedsArgs(args: unknown): args is RecentFeedsArgs {
+  if (!isPlainObject(args)) return false;
+  const { max, since, lang, cat, notcat } = args as RecentFeedsArgs;
+  return (
+    (max === undefined || typeof max === "number") &&
+    (since === undefined || typeof since === "number") &&
+    (lang === undefined || typeof lang === "string") &&
+    (cat === undefined || typeof cat === "string") &&
+    (notcat === undefined || typeof notcat === "string")
+  );
+}
+
+export interface RecentNewFeedsArgs {
+  max?: number;
+  since?: number;
+  feedid?: string;
+  desc?: boolean;
+}
+
+export function isRecentNewFeedsArgs(args: unknown): args is RecentNewFeedsArgs {
+  if (!isPlainObject(args)) return false;
+  const { max, since, feedid, desc } = args as RecentNewFeedsArgs;
+  return (
+    (max === undefined || typeof max === "number") &&
+    (since === undefined || typeof since === "number") &&
+    (feedid === undefined || typeof feedid === "string") &&
+    (desc === undefined || typeof desc === "boolean")
+  );
+}
+
+export interface StatsCurrentArgs {}
+
+export function isStatsCurrentArgs(args: unknown): args is StatsCurrentArgs {
+  return isPlainObject(args);
+}

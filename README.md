@@ -92,12 +92,26 @@ This server is entirely read-only: every tool declares the MCP [tool annotation]
 |------|-------------|
 | `search_by_person` | Search for episodes where a person appeared as host or guest. Returns matches across all indexed podcasts. |
 | `search_by_term` | Full-text search across all podcasts by topic, show name, or keyword. |
+| `search_by_title` | Search for podcasts by title. |
 | `podcast_by_feed_url` | Look up a podcast by RSS feed URL. Returns feed ID, iTunes ID, categories, last update, and feed health. |
 | `podcast_by_feed_id` | Look up a podcast by its Podcast Index feed ID. Returns full metadata. |
+| `podcast_by_itunes_id` | Look up a podcast by its Apple Podcasts (iTunes) ID. |
+| `podcast_by_guid` | Look up a podcast by its `podcast:guid` tag value. |
 | `trending_podcasts` | Get currently trending podcasts, with optional language and category filters. |
 | `episodes_by_feed_id` | Get episodes for a specific podcast by feed ID. |
+| `episode_by_id` | Look up a single episode by its Podcast Index episode ID. |
+| `episodes_live` | Get episodes that are currently live (actively streaming). |
 | `recent_episodes` | Get the most recently published episodes across the entire index. |
+| `recent_feeds` | Get the most recently updated podcast feeds across the index. |
+| `recent_new_feeds` | Get podcast feeds newly added to the index. |
+| `value_by_feed_id` | Get value4value (lightning payment) info for a podcast by feed ID. |
+| `value_by_feed_url` | Get value4value (lightning payment) info for a podcast by feed URL. |
 | `categories_list` | Get the full list of Podcast Index categories and their IDs. |
+| `stats_current` | Get current aggregate statistics for the Podcast Index. |
+
+### Typed errors
+
+API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every tool call still returns the same `isError: true` response shape on failure — the typed hierarchy just makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
 
 ## Example Prompts
 
@@ -131,6 +145,12 @@ npm run watch
 ## Contributing
 
 Issues and pull requests are welcome. If there is a Podcast Index endpoint you want exposed as a tool, open an issue describing the use case, or follow the steps above and open a PR. Bug reports should include the tool name and the arguments you passed.
+
+## Acknowledgments
+
+This server exists because of the free, open [Podcast Index](https://podcastindex.org/) API and its [documentation](https://podcastindex-org.github.io/docs-api/) — all tools here are thin wrappers over that API.
+
+The expanded endpoint coverage and typed-error design in this release were inspired by Craig Lawton's [podcastindex-mcp-server](https://github.com/cclawton/podcastindex-mcp-server), an earlier MCP server for the same API. No code from that project was used here; this server's implementation, tool schemas, and error-handling code were written independently against the official API docs.
 
 ---
 

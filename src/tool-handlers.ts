@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { PodcastIndexApiClient } from "./api-client.js";
+import { PodcastIndexError, extractErrorDetail } from "./errors.js";
 import {
   isSearchByPersonArgs,
   isSearchByTermArgs,
@@ -10,6 +11,16 @@ import {
   isEpisodesByFeedIdArgs,
   isRecentEpisodesArgs,
   isCategoriesListArgs,
+  isSearchByTitleArgs,
+  isEpisodeByIdArgs,
+  isEpisodesLiveArgs,
+  isPodcastByItunesIdArgs,
+  isPodcastByGuidArgs,
+  isValueByFeedIdArgs,
+  isValueByFeedUrlArgs,
+  isRecentFeedsArgs,
+  isRecentNewFeedsArgs,
+  isStatsCurrentArgs,
 } from "./types.js";
 
 /**
@@ -211,6 +222,209 @@ export const TOOLS = [
       properties: {},
     },
   },
+  {
+    name: "search_by_title",
+    description:
+      "Search for podcasts by title. Narrower than search_by_term, which also matches descriptions and other feed metadata — use this when you already know (or are guessing at) the show name.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        q: {
+          type: "string",
+          description: 'Podcast title to search for (e.g. "Chain of Thought")',
+        },
+        max: {
+          type: "number",
+          description: "Maximum results to return (default 10)",
+          minimum: 1,
+          maximum: 100,
+        },
+        clean: {
+          type: "boolean",
+          description: "Exclude explicit content (default false)",
+        },
+        fulltext: {
+          type: "boolean",
+          description: "Return full text descriptions (default false)",
+        },
+      },
+      required: ["q"],
+    },
+  },
+  {
+    name: "episode_by_id",
+    description:
+      "Look up a single episode by its Podcast Index episode ID. Returns full episode metadata including enclosure URL, duration, and transcript links where available.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        id: {
+          type: "number",
+          description: "Podcast Index episode ID",
+        },
+        fulltext: {
+          type: "boolean",
+          description: "Return full text descriptions (default false)",
+        },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "episodes_live",
+    description:
+      "Get episodes that are currently live (actively streaming right now) across the Podcast Index. Useful for finding live shows in progress.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        max: {
+          type: "number",
+          description: "Maximum results to return (default 10)",
+          minimum: 1,
+          maximum: 100,
+        },
+      },
+    },
+  },
+  {
+    name: "podcast_by_itunes_id",
+    description:
+      "Look up a podcast by its Apple Podcasts (iTunes) ID. Returns full Podcast Index feed metadata.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        id: {
+          type: "number",
+          description: "Apple Podcasts (iTunes) feed ID",
+        },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "podcast_by_guid",
+    description:
+      "Look up a podcast by its podcast:guid tag value — the globally unique identifier defined in the Podcast Namespace spec. Use this when you have the GUID rather than a feed URL or ID.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        guid: {
+          type: "string",
+          description: "The podcast:guid value from the feed",
+        },
+      },
+      required: ["guid"],
+    },
+  },
+  {
+    name: "value_by_feed_id",
+    description:
+      "Get the value4value (lightning payment / streaming sats) information for a podcast by its Podcast Index feed ID, if the feed publishes a podcast:value block.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        id: {
+          type: "number",
+          description: "Podcast Index feed ID",
+        },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "value_by_feed_url",
+    description:
+      "Get the value4value (lightning payment / streaming sats) information for a podcast by its RSS feed URL, if the feed publishes a podcast:value block.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        url: {
+          type: "string",
+          description: "RSS feed URL",
+        },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "recent_feeds",
+    description:
+      "Get the most recently updated podcast feeds across the entire Podcast Index, with optional language and category filters. Useful for spotting fresh activity in the ecosystem.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        max: {
+          type: "number",
+          description: "Maximum results to return (default 40)",
+          minimum: 1,
+          maximum: 100,
+        },
+        since: {
+          type: "number",
+          description: "Only return feeds updated since this Unix timestamp",
+        },
+        lang: {
+          type: "string",
+          description: 'Language code filter (e.g. "en")',
+        },
+        cat: {
+          type: "string",
+          description: "Only include feeds with these categories (comma-separated names or IDs)",
+        },
+        notcat: {
+          type: "string",
+          description: "Exclude feeds with these categories (comma-separated names or IDs)",
+        },
+      },
+    },
+  },
+  {
+    name: "recent_new_feeds",
+    description:
+      "Get podcast feeds newly added to the Podcast Index, in the order they were added. Useful for discovering brand-new shows before they show up in other searches.",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        max: {
+          type: "number",
+          description: "Maximum results to return (default 40)",
+          minimum: 1,
+          maximum: 100,
+        },
+        since: {
+          type: "number",
+          description: "Only return feeds added since this Unix timestamp",
+        },
+        feedid: {
+          type: "string",
+          description: "Podcast Index feed ID to start from. Takes precedence over since — if both are set, since is ignored.",
+        },
+        desc: {
+          type: "boolean",
+          description: "Return feeds in descending order (default false, only applies with feedid)",
+        },
+      },
+    },
+  },
+  {
+    name: "stats_current",
+    description:
+      "Get current aggregate statistics for the entire Podcast Index (total feeds, episodes, and related counts).",
+    annotations: READ_ONLY,
+    inputSchema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
 ];
 
 export const MISSING_CREDENTIALS_MESSAGE =
@@ -296,14 +510,105 @@ export class ToolHandlers {
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
         }
 
+        case "search_by_title": {
+          if (!isSearchByTitleArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'q' (string)");
+          }
+          const data = await this.apiClient.searchByTitle(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "episode_by_id": {
+          if (!isEpisodeByIdArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+          }
+          const data = await this.apiClient.episodeById(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "episodes_live": {
+          if (!isEpisodesLiveArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+          }
+          const data = await this.apiClient.episodesLive(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "podcast_by_itunes_id": {
+          if (!isPodcastByItunesIdArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+          }
+          const data = await this.apiClient.podcastByItunesId(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "podcast_by_guid": {
+          if (!isPodcastByGuidArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'guid' (string)");
+          }
+          const data = await this.apiClient.podcastByGuid(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "value_by_feed_id": {
+          if (!isValueByFeedIdArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+          }
+          const data = await this.apiClient.valueByFeedId(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "value_by_feed_url": {
+          if (!isValueByFeedUrlArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'url' (string)");
+          }
+          const data = await this.apiClient.valueByFeedUrl(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "recent_feeds": {
+          if (!isRecentFeedsArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+          }
+          const data = await this.apiClient.recentFeeds(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "recent_new_feeds": {
+          if (!isRecentNewFeedsArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+          }
+          const data = await this.apiClient.recentNewFeeds(args);
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
+        case "stats_current": {
+          if (!isStatsCurrentArgs(args)) {
+            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+          }
+          const data = await this.apiClient.statsCurrent();
+          return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        }
+
         default:
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
       }
     } catch (error) {
       if (error instanceof McpError) throw error;
+      // Typed errors (see ./errors.ts) are thrown by PodcastIndexApiClient
+      // with a fully-formatted, status-specific message already baked in.
+      if (error instanceof PodcastIndexError) {
+        return {
+          content: [{ type: "text" as const, text: error.message }],
+          isError: true,
+        };
+      }
+      // Fallback for a raw axios error that reaches this layer without
+      // going through PodcastIndexApiClient's mapping (kept for backward
+      // compatibility with the original isError response shape).
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const message = error.response?.data?.description || error.message;
+        const message = extractErrorDetail(error.response?.data, error.message);
         return {
           content: [{ type: "text" as const, text: `API error (${status}): ${message}` }],
           isError: true,
