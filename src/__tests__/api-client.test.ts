@@ -360,5 +360,32 @@ describe("PodcastIndexApiClient", () => {
       mockGet.mockRejectedValueOnce(plainError);
       await expect(client.categoriesList()).rejects.toBe(plainError);
     });
+
+    // Regression test: the live Podcast Index API returns a bare string body
+    // for 401s (e.g. "Authorization header value either not set or blank...")
+    // despite advertising `Content-Type: application/json` — it is not
+    // `{ description: "..." }`. Confirmed against the live, unauthenticated
+    // API on 2026-07-08. Extracting `.description` off a string silently
+    // discards the real detail and falls back to Axios's generic
+    // "Request failed with status code 401" message.
+    it("preserves the raw string body of a 401 response instead of discarding it", async () => {
+      const axios = await import("axios");
+      vi.spyOn(axios.default, "isAxiosError").mockReturnValueOnce(true);
+      const detail = "Authorization header value either not set or blank.";
+      const axiosError = new Error("Request failed with status code 401") as any;
+      axiosError.isAxiosError = true;
+      axiosError.response = { status: 401, data: detail };
+      mockGet.mockRejectedValueOnce(axiosError);
+
+      let thrown: unknown;
+      try {
+        await client.categoriesList();
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(AuthenticationError);
+      expect((thrown as AuthenticationError).message).toContain(detail);
+      expect((thrown as AuthenticationError).message).not.toContain("Request failed with status code");
+    });
   });
 });

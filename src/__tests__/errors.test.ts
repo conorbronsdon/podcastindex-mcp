@@ -7,6 +7,7 @@ import {
   NotFoundError,
   ServerError,
   mapHttpStatusToError,
+  extractErrorDetail,
 } from "../errors.js";
 
 describe("typed error hierarchy", () => {
@@ -95,5 +96,31 @@ describe("mapHttpStatusToError", () => {
     expect(err.status).toBeUndefined();
     expect(err.message).toContain("API error (unknown)");
     expect(err.message).toContain("ECONNREFUSED");
+  });
+});
+
+describe("extractErrorDetail", () => {
+  it("returns a bare string response body as-is (the live API's actual 401 shape)", () => {
+    expect(
+      extractErrorDetail("Authorization header value either not set or blank.", "fallback")
+    ).toBe("Authorization header value either not set or blank.");
+  });
+
+  it("returns the description field from an object response body", () => {
+    expect(extractErrorDetail({ status: "false", description: "Invalid parameters" }, "fallback")).toBe(
+      "Invalid parameters"
+    );
+  });
+
+  it("falls back when response data is undefined (network failure, no response)", () => {
+    expect(extractErrorDetail(undefined, "ECONNREFUSED")).toBe("ECONNREFUSED");
+  });
+
+  it("falls back when response data is an object with no description field", () => {
+    expect(extractErrorDetail({ status: "false" }, "fallback")).toBe("fallback");
+  });
+
+  it("falls back when response data is an empty string", () => {
+    expect(extractErrorDetail("", "fallback")).toBe("fallback");
   });
 });

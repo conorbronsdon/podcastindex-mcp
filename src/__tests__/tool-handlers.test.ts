@@ -310,6 +310,25 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("API error");
     });
+
+    // Regression test: the live Podcast Index API returns a bare string body
+    // for 401s, not `{ description: "..." }` (see api-client.test.ts for the
+    // live-request confirmation). This path must preserve that string too.
+    it("preserves a raw string response body instead of falling back to a generic message", async () => {
+      const detail = "Authorization header value either not set or blank.";
+      const axiosError = new Error("Request failed with status code 401") as any;
+      axiosError.isAxiosError = true;
+      axiosError.response = { status: 401, data: detail };
+
+      const axios = await import("axios");
+      vi.spyOn(axios.default, "isAxiosError").mockReturnValueOnce(true);
+
+      mockApiClient.searchByPerson.mockRejectedValueOnce(axiosError);
+      const result = await handlers.handleToolCall("search_by_person", { q: "test" });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(detail);
+      expect(result.content[0].text).not.toContain("Request failed with status code");
+    });
   });
 
   describe("typed error handling (PodcastIndexError hierarchy)", () => {

@@ -1,7 +1,7 @@
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { PodcastIndexApiClient } from "./api-client.js";
-import { PodcastIndexError } from "./errors.js";
+import { PodcastIndexError, extractErrorDetail } from "./errors.js";
 import {
   isSearchByPersonArgs,
   isSearchByTermArgs,
@@ -406,7 +406,7 @@ export const TOOLS = [
         },
         feedid: {
           type: "string",
-          description: "Podcast Index feed ID to start from (ignored if since is also set)",
+          description: "Podcast Index feed ID to start from. Takes precedence over since — if both are set, since is ignored.",
         },
         desc: {
           type: "boolean",
@@ -608,7 +608,7 @@ export class ToolHandlers {
       // compatibility with the original isError response shape).
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const message = error.response?.data?.description || error.message;
+        const message = extractErrorDetail(error.response?.data, error.message);
         return {
           content: [{ type: "text" as const, text: `API error (${status}): ${message}` }],
           isError: true,

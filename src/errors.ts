@@ -92,3 +92,24 @@ export function mapHttpStatusToError(status: number | undefined, detail: string)
   if (status !== undefined && status >= 500) return new ServerError(detail, status);
   return new PodcastIndexError(`API error (${status ?? "unknown"}): ${detail}`, status);
 }
+
+/**
+ * Pulls a human-readable detail string out of an Axios error response body.
+ *
+ * The Podcast Index API is inconsistent about response shape: most error
+ * bodies are JSON objects (`{ status, description }`), but some — notably
+ * 401s — are sent as a bare string despite the `Content-Type` header
+ * claiming `application/json` (confirmed against the live API: a request
+ * with no auth headers returns the plain-text body "Authorization header
+ * value either not set or blank...", not `{ description: "..." }`).
+ * Assuming the object shape unconditionally silently discards that message
+ * and falls back to Axios's generic "Request failed with status code NNN".
+ */
+export function extractErrorDetail(responseData: unknown, fallback: string): string {
+  if (typeof responseData === "string" && responseData.length > 0) return responseData;
+  if (responseData && typeof responseData === "object" && "description" in responseData) {
+    const description = (responseData as { description?: unknown }).description;
+    if (typeof description === "string" && description.length > 0) return description;
+  }
+  return fallback;
+}

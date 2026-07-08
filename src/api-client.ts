@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import axios, { AxiosInstance } from "axios";
-import { mapHttpStatusToError } from "./errors.js";
+import { mapHttpStatusToError, extractErrorDetail } from "./errors.js";
 import type {
   SearchByPersonArgs,
   SearchByTermArgs,
@@ -66,10 +66,7 @@ export class PodcastIndexApiClient {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const detail =
-          (error.response?.data as { description?: string } | undefined)?.description ||
-          error.message;
-        throw mapHttpStatusToError(status, detail);
+        throw mapHttpStatusToError(status, extractErrorDetail(error.response?.data, error.message));
       }
       throw error;
     }
