@@ -6,6 +6,7 @@ import {
   MISSING_CREDENTIALS_MESSAGE,
 } from "../tool-handlers.js";
 import { PodcastIndexApiClient } from "../api-client.js";
+import { AuthenticationError, RateLimitError, ServerError } from "../errors.js";
 
 // Create a mock API client
 const mockApiClient = {
@@ -17,6 +18,16 @@ const mockApiClient = {
   episodesByFeedId: vi.fn().mockResolvedValue({ items: [] }),
   recentEpisodes: vi.fn().mockResolvedValue({ items: [] }),
   categoriesList: vi.fn().mockResolvedValue({ feeds: [] }),
+  searchByTitle: vi.fn().mockResolvedValue({ feeds: [] }),
+  episodeById: vi.fn().mockResolvedValue({ episode: {} }),
+  episodesLive: vi.fn().mockResolvedValue({ items: [] }),
+  podcastByItunesId: vi.fn().mockResolvedValue({ feed: {} }),
+  podcastByGuid: vi.fn().mockResolvedValue({ feed: {} }),
+  valueByFeedId: vi.fn().mockResolvedValue({ value: {} }),
+  valueByFeedUrl: vi.fn().mockResolvedValue({ value: {} }),
+  recentFeeds: vi.fn().mockResolvedValue({ feeds: [] }),
+  recentNewFeeds: vi.fn().mockResolvedValue({ feeds: [] }),
+  statsCurrent: vi.fn().mockResolvedValue({ stats: {} }),
 };
 
 let handlers: ToolHandlers;
@@ -53,8 +64,8 @@ describe("missing credentials (lazy auth)", () => {
 });
 
 describe("TOOLS", () => {
-  it("exports 8 tools", () => {
-    expect(TOOLS).toHaveLength(8);
+  it("exports 18 tools", () => {
+    expect(TOOLS).toHaveLength(18);
   });
 
   it("each tool has name, description, and inputSchema", () => {
@@ -172,6 +183,104 @@ describe("ToolHandlers.handleToolCall", () => {
     });
   });
 
+  describe("search_by_title", () => {
+    it("calls apiClient.searchByTitle", async () => {
+      await handlers.handleToolCall("search_by_title", { q: "Chain of Thought" });
+      expect(mockApiClient.searchByTitle).toHaveBeenCalledWith({ q: "Chain of Thought" });
+    });
+
+    it("throws on missing q", async () => {
+      await expect(handlers.handleToolCall("search_by_title", {})).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("episode_by_id", () => {
+    it("calls apiClient.episodeById", async () => {
+      await handlers.handleToolCall("episode_by_id", { id: 999 });
+      expect(mockApiClient.episodeById).toHaveBeenCalledWith({ id: 999 });
+    });
+
+    it("throws on missing id", async () => {
+      await expect(handlers.handleToolCall("episode_by_id", {})).rejects.toThrow(McpError);
+    });
+
+    it("throws on string id", async () => {
+      await expect(handlers.handleToolCall("episode_by_id", { id: "999" })).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("episodes_live", () => {
+    it("calls apiClient.episodesLive", async () => {
+      await handlers.handleToolCall("episodes_live", {});
+      expect(mockApiClient.episodesLive).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe("podcast_by_itunes_id", () => {
+    it("calls apiClient.podcastByItunesId", async () => {
+      await handlers.handleToolCall("podcast_by_itunes_id", { id: 123456 });
+      expect(mockApiClient.podcastByItunesId).toHaveBeenCalledWith({ id: 123456 });
+    });
+
+    it("throws on missing id", async () => {
+      await expect(handlers.handleToolCall("podcast_by_itunes_id", {})).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("podcast_by_guid", () => {
+    it("calls apiClient.podcastByGuid", async () => {
+      await handlers.handleToolCall("podcast_by_guid", { guid: "abc-123" });
+      expect(mockApiClient.podcastByGuid).toHaveBeenCalledWith({ guid: "abc-123" });
+    });
+
+    it("throws on missing guid", async () => {
+      await expect(handlers.handleToolCall("podcast_by_guid", {})).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("value_by_feed_id", () => {
+    it("calls apiClient.valueByFeedId", async () => {
+      await handlers.handleToolCall("value_by_feed_id", { id: 100 });
+      expect(mockApiClient.valueByFeedId).toHaveBeenCalledWith({ id: 100 });
+    });
+
+    it("throws on missing id", async () => {
+      await expect(handlers.handleToolCall("value_by_feed_id", {})).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("value_by_feed_url", () => {
+    it("calls apiClient.valueByFeedUrl", async () => {
+      await handlers.handleToolCall("value_by_feed_url", { url: "https://example.com/feed.xml" });
+      expect(mockApiClient.valueByFeedUrl).toHaveBeenCalledWith({ url: "https://example.com/feed.xml" });
+    });
+
+    it("throws on missing url", async () => {
+      await expect(handlers.handleToolCall("value_by_feed_url", {})).rejects.toThrow(McpError);
+    });
+  });
+
+  describe("recent_feeds", () => {
+    it("calls apiClient.recentFeeds", async () => {
+      await handlers.handleToolCall("recent_feeds", {});
+      expect(mockApiClient.recentFeeds).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe("recent_new_feeds", () => {
+    it("calls apiClient.recentNewFeeds", async () => {
+      await handlers.handleToolCall("recent_new_feeds", {});
+      expect(mockApiClient.recentNewFeeds).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe("stats_current", () => {
+    it("calls apiClient.statsCurrent", async () => {
+      await handlers.handleToolCall("stats_current", {});
+      expect(mockApiClient.statsCurrent).toHaveBeenCalled();
+    });
+  });
+
   describe("unknown tool", () => {
     it("throws McpError with MethodNotFound", async () => {
       let thrown: unknown;
@@ -186,7 +295,7 @@ describe("ToolHandlers.handleToolCall", () => {
     });
   });
 
-  describe("axios error handling", () => {
+  describe("axios error handling (fallback for a raw axios error, backward-compat)", () => {
     it("returns isError response on API failure", async () => {
       const axiosError = new Error("Network error") as any;
       axiosError.isAxiosError = true;
@@ -200,6 +309,40 @@ describe("ToolHandlers.handleToolCall", () => {
       const result = await handlers.handleToolCall("search_by_person", { q: "test" });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("API error");
+    });
+  });
+
+  describe("typed error handling (PodcastIndexError hierarchy)", () => {
+    it("returns isError response with the AuthenticationError message on 401/403", async () => {
+      mockApiClient.searchByPerson.mockRejectedValueOnce(
+        new AuthenticationError("Invalid API key", 401)
+      );
+      const result = await handlers.handleToolCall("search_by_person", { q: "test" });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Authentication error (401)");
+      expect(result.content[0].text).toContain("PODCASTINDEX_API_KEY");
+    });
+
+    it("returns isError response with the RateLimitError message on 429", async () => {
+      mockApiClient.searchByTerm.mockRejectedValueOnce(new RateLimitError("Too many requests", 429));
+      const result = await handlers.handleToolCall("search_by_term", { q: "AI" });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Rate limit error (429)");
+    });
+
+    it("returns isError response with the ServerError message on 5xx", async () => {
+      mockApiClient.categoriesList.mockRejectedValueOnce(new ServerError("Internal error", 503));
+      const result = await handlers.handleToolCall("categories_list", {});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Server error (503)");
+    });
+
+    it("keeps the isError response shape identical to the legacy axios-error path", async () => {
+      mockApiClient.searchByPerson.mockRejectedValueOnce(new AuthenticationError("bad key", 401));
+      const result = await handlers.handleToolCall("search_by_person", { q: "test" });
+      expect(Object.keys(result).sort()).toEqual(["content", "isError"]);
+      expect(result.content[0]).toHaveProperty("type", "text");
+      expect(typeof result.content[0].text).toBe("string");
     });
   });
 });

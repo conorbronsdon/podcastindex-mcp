@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import axios, { AxiosInstance } from "axios";
+import { mapHttpStatusToError } from "./errors.js";
 import type {
   SearchByPersonArgs,
   SearchByTermArgs,
@@ -8,6 +9,15 @@ import type {
   TrendingPodcastsArgs,
   EpisodesByFeedIdArgs,
   RecentEpisodesArgs,
+  SearchByTitleArgs,
+  EpisodeByIdArgs,
+  EpisodesLiveArgs,
+  PodcastByItunesIdArgs,
+  PodcastByGuidArgs,
+  ValueByFeedIdArgs,
+  ValueByFeedUrlArgs,
+  RecentFeedsArgs,
+  RecentNewFeedsArgs,
 } from "./types.js";
 
 export class PodcastIndexApiClient {
@@ -38,15 +48,38 @@ export class PodcastIndexApiClient {
     };
   }
 
+  /**
+   * Shared GET helper: every endpoint method funnels through here so HTTP
+   * failures are mapped to the typed error hierarchy (see ./errors.ts) in
+   * exactly one place, instead of duplicating try/catch in each method.
+   */
+  private async get<T = unknown>(
+    path: string,
+    params: Record<string, string | number | boolean> = {}
+  ): Promise<T> {
+    try {
+      const response = await this.api.get(path, {
+        params,
+        headers: this.getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const detail =
+          (error.response?.data as { description?: string } | undefined)?.description ||
+          error.message;
+        throw mapHttpStatusToError(status, detail);
+      }
+      throw error;
+    }
+  }
+
   async searchByPerson(args: SearchByPersonArgs) {
     const params: Record<string, string | number | boolean> = { q: args.q };
     if (args.max !== undefined) params.max = args.max;
     if (args.fulltext) params.fulltext = true;
-    const response = await this.api.get("/search/byperson", {
-      params,
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/search/byperson", params);
   }
 
   async searchByTerm(args: SearchByTermArgs) {
@@ -54,27 +87,15 @@ export class PodcastIndexApiClient {
     if (args.max !== undefined) params.max = args.max;
     if (args.clean) params.clean = true;
     if (args.fulltext) params.fulltext = true;
-    const response = await this.api.get("/search/byterm", {
-      params,
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/search/byterm", params);
   }
 
   async podcastByFeedUrl(args: PodcastByFeedUrlArgs) {
-    const response = await this.api.get("/podcasts/byfeedurl", {
-      params: { url: args.url },
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/podcasts/byfeedurl", { url: args.url });
   }
 
   async podcastByFeedId(args: PodcastByFeedIdArgs) {
-    const response = await this.api.get("/podcasts/byfeedid", {
-      params: { id: args.id },
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/podcasts/byfeedid", { id: args.id });
   }
 
   async trendingPodcasts(args: TrendingPodcastsArgs) {
@@ -83,11 +104,7 @@ export class PodcastIndexApiClient {
     if (args.lang) params.lang = args.lang;
     if (args.cat) params.cat = args.cat;
     if (args.since !== undefined) params.since = args.since;
-    const response = await this.api.get("/podcasts/trending", {
-      params,
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/podcasts/trending", params);
   }
 
   async episodesByFeedId(args: EpisodesByFeedIdArgs) {
@@ -95,11 +112,7 @@ export class PodcastIndexApiClient {
     if (args.max !== undefined) params.max = args.max;
     if (args.since !== undefined) params.since = args.since;
     if (args.fulltext) params.fulltext = true;
-    const response = await this.api.get("/episodes/byfeedid", {
-      params,
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/episodes/byfeedid", params);
   }
 
   async recentEpisodes(args: RecentEpisodesArgs) {
@@ -108,17 +121,69 @@ export class PodcastIndexApiClient {
     if (args.excludeString) params.excludeString = args.excludeString;
     if (args.before !== undefined) params.before = args.before;
     if (args.fulltext) params.fulltext = true;
-    const response = await this.api.get("/recent/episodes", {
-      params,
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/recent/episodes", params);
   }
 
   async categoriesList() {
-    const response = await this.api.get("/categories/list", {
-      headers: this.getAuthHeaders(),
-    });
-    return response.data;
+    return this.get("/categories/list");
+  }
+
+  async searchByTitle(args: SearchByTitleArgs) {
+    const params: Record<string, string | number | boolean> = { q: args.q };
+    if (args.max !== undefined) params.max = args.max;
+    if (args.clean) params.clean = true;
+    if (args.fulltext) params.fulltext = true;
+    return this.get("/search/bytitle", params);
+  }
+
+  async episodeById(args: EpisodeByIdArgs) {
+    const params: Record<string, string | number | boolean> = { id: args.id };
+    if (args.fulltext) params.fulltext = true;
+    return this.get("/episodes/byid", params);
+  }
+
+  async episodesLive(args: EpisodesLiveArgs) {
+    const params: Record<string, string | number | boolean> = {};
+    if (args.max !== undefined) params.max = args.max;
+    return this.get("/episodes/live", params);
+  }
+
+  async podcastByItunesId(args: PodcastByItunesIdArgs) {
+    return this.get("/podcasts/byitunesid", { id: args.id });
+  }
+
+  async podcastByGuid(args: PodcastByGuidArgs) {
+    return this.get("/podcasts/byguid", { guid: args.guid });
+  }
+
+  async valueByFeedId(args: ValueByFeedIdArgs) {
+    return this.get("/value/byfeedid", { id: args.id });
+  }
+
+  async valueByFeedUrl(args: ValueByFeedUrlArgs) {
+    return this.get("/value/byfeedurl", { url: args.url });
+  }
+
+  async recentFeeds(args: RecentFeedsArgs) {
+    const params: Record<string, string | number | boolean> = {};
+    if (args.max !== undefined) params.max = args.max;
+    if (args.since !== undefined) params.since = args.since;
+    if (args.lang) params.lang = args.lang;
+    if (args.cat) params.cat = args.cat;
+    if (args.notcat) params.notcat = args.notcat;
+    return this.get("/recent/feeds", params);
+  }
+
+  async recentNewFeeds(args: RecentNewFeedsArgs) {
+    const params: Record<string, string | number | boolean> = {};
+    if (args.max !== undefined) params.max = args.max;
+    if (args.since !== undefined) params.since = args.since;
+    if (args.feedid) params.feedid = args.feedid;
+    if (args.desc) params.desc = true;
+    return this.get("/recent/newfeeds", params);
+  }
+
+  async statsCurrent() {
+    return this.get("/stats/current");
   }
 }

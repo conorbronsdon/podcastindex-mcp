@@ -1,6 +1,6 @@
 {
   "name": "podcastindex-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server for the Podcast Index API — search podcasts, track appearances, monitor trending shows, and check feed health.",
   "type": "module",
   "mcpName": "io.github.conorbronsdon/podcastindex-mcp",
