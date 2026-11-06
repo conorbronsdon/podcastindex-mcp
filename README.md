@@ -36,7 +36,7 @@ Built and maintained by [Conor Bronsdon](https://github.com/conorbronsdon) for t
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - Free Podcast Index API credentials -- get them at [api.podcastindex.org](https://api.podcastindex.org/)
 
 ## Installation
