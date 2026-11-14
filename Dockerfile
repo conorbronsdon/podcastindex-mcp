@@ -4,13 +4,13 @@
 
 # Pin the multi-architecture base for reproducible MCP Catalog builds.
 # Dependabot checks the pinned node/alpine tag weekly for a new digest.
-FROM node:26-alpine3.24@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS builder
+FROM node:26-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS builder
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 COPY src ./src
 RUN npm ci --ignore-scripts && npm run build
 
-FROM node:26-alpine3.24@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
+FROM node:26-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
