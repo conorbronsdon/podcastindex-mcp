@@ -26,11 +26,12 @@ npm test        # vitest run
 ```
 
 ## Testing
-4 test suites:
+5 test suites:
 - `types.test.ts` — Type guard validation (valid/invalid inputs for all 18 arg types)
 - `api-client.test.ts` — API endpoints, param forwarding, auth header generation (mocked axios)
 - `tool-handlers.test.ts` — Tool dispatch, error handling, TOOLS registry integrity
 - `errors.test.ts` — HTTP status to typed error mapping (`src/errors.ts`)
+- `engines.test.ts` — `engines`, the lockfile root and the README Node prerequisite start at the oldest CI matrix leg
 
 ## Agent workflow
 - Always work on a branch. Never push directly to main.
