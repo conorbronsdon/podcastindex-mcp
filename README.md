@@ -41,6 +41,25 @@ Built and maintained by [Conor Bronsdon](https://github.com/conorbronsdon) for t
 
 ## Installation
 
+The package is published on npm as [`podcastindex-mcp`](https://www.npmjs.com/package/podcastindex-mcp), so an MCP client can launch it with `npx` and no local checkout:
+
+```json
+{
+  "mcpServers": {
+    "podcastindex": {
+      "command": "npx",
+      "args": ["-y", "podcastindex-mcp"],
+      "env": {
+        "PODCASTINDEX_API_KEY": "your-api-key",
+        "PODCASTINDEX_API_SECRET": "your-api-secret"
+      }
+    }
+  }
+}
+```
+
+Or build from source and point the client at `build/index.js`, as in the configs below:
+
 ```bash
 git clone https://github.com/conorbronsdon/podcastindex-mcp.git
 cd podcastindex-mcp
@@ -115,7 +134,17 @@ This server is entirely read-only: every tool declares the MCP [tool annotation]
 
 ### Typed errors
 
-API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every tool call still returns the same `isError: true` response shape on failure — the typed hierarchy just makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
+API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every API failure (including network errors with no HTTP status) comes back as a tool result with `isError: true`. The typed hierarchy makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
+
+Three failures are raised before any API call and come back as JSON-RPC errors (`McpError`), not as `isError` tool results:
+
+| Condition | JSON-RPC error code |
+|-----------|---------------------|
+| `PODCASTINDEX_API_KEY` or `PODCASTINDEX_API_SECRET` not set | `-32600` (InvalidRequest) |
+| Arguments fail validation (for example a missing `q` or a string `id`) | `-32602` (InvalidParams) |
+| Unknown tool name | `-32601` (MethodNotFound) |
+
+The server starts without credentials so clients can list its tools. Tool calls fail with the `-32600` error until both variables are set.
 
 ## Example Prompts
 
