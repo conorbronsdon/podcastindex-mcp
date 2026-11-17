@@ -136,7 +136,7 @@ This server is entirely read-only: every tool declares the MCP [tool annotations
 
 API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every API failure (including network errors with no HTTP status, and requests that get no response within 30 seconds) comes back as a tool result with `isError: true`. The typed hierarchy makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
 
-Arguments are checked against each tool's `inputSchema` before any API call: required fields must be present, `max` must be an integer from 1 to 100, and `id`, `since` and `before` must be integers. A call that fails this check (for example a missing `q`, a string `id` or `max: 500`) comes back as a tool result with `isError: true` and a message listing the expected arguments, so the model can correct the call.
+Arguments are checked against the field types and bounds in each tool's `inputSchema` before any API call (unknown extra fields are ignored, as the schemas do not set `additionalProperties: false`): required fields must be present, `max` must be an integer from 1 to 100, and `id`, `since` and `before` must be integers. A call that fails this check (for example a missing `q`, a string `id` or `max: 500`) comes back as a tool result with `isError: true` and a message listing the expected arguments, so the model can correct the call.
 
 Two failures come back as JSON-RPC errors (`McpError`), not as `isError` tool results:
 

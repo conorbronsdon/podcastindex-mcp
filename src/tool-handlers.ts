@@ -1,4 +1,4 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { McpError, ErrorCode, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { PodcastIndexApiClient } from "./api-client.js";
 import { PodcastIndexError, extractErrorDetail } from "./errors.js";
@@ -463,7 +463,7 @@ function describeArguments(tool: (typeof TOOLS)[number]): string {
  * the model sees the message and can correct its call. Missing credentials and
  * unknown tools stay JSON-RPC errors.
  */
-function invalidArguments(name: string) {
+function invalidArguments(name: string): CallToolResult {
   const tool = TOOLS.find((t) => t.name === name)!;
   return {
     content: [
@@ -482,7 +482,7 @@ export class ToolHandlers {
     this.hasCredentials = hasCredentials;
   }
 
-  async handleToolCall(name: string, args: unknown) {
+  async handleToolCall(name: string, args: unknown): Promise<CallToolResult> {
     if (!this.hasCredentials) {
       throw new McpError(ErrorCode.InvalidRequest, MISSING_CREDENTIALS_MESSAGE);
     }

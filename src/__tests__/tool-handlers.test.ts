@@ -520,6 +520,17 @@ describe("advertised bounds (#35)", () => {
     );
   });
 
+  it("spells out every field, its range and (required) in the message", async () => {
+    const missing = await handlers.handleToolCall("search_by_person", {});
+    expect(missing.content[0].text).toBe(
+      "Invalid arguments for search_by_person: expected { q: string (required), max: integer 1-100, fulltext: boolean }"
+    );
+    const noRequired = await handlers.handleToolCall("trending_podcasts", { max: 0 });
+    expect(noRequired.content[0].text).toBe(
+      "Invalid arguments for trending_podcasts: expected { max: integer 1-100, lang: string, cat: string, since: integer }"
+    );
+  });
+
   it("returns an isError result for a fractional since or before", async () => {
     await expectInvalidArguments("recent_feeds", { since: 1700000000.5 });
     await expectInvalidArguments("recent_episodes", { before: Number.NaN });
