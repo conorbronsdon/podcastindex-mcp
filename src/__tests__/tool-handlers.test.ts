@@ -98,10 +98,31 @@ describe("TOOLS", () => {
     }
   });
 
-  it("no tool carries a destructive or non-read-only hint", () => {
-    for (const tool of TOOLS) {
-      expect(tool.annotations).toEqual({ readOnlyHint: true });
+  // Pin the exact annotation object. The spec defaults for omitted hints
+  // are the unsafe values (destructiveHint: true, idempotentHint: false,
+  // openWorldHint: true), so every hint is declared explicitly.
+  const EXPECTED_ANNOTATIONS = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: true,
+  };
+  const assertFullAnnotations = (tools: ReadonlyArray<{ name: string; annotations?: unknown }>) => {
+    for (const tool of tools) {
+      expect(tool.annotations, tool.name).toStrictEqual(EXPECTED_ANNOTATIONS);
     }
+  };
+
+  it("every tool declares the full read-only, open-world annotation set", () => {
+    assertFullAnnotations(TOOLS);
+  });
+
+  it("annotation check goes red for a tool that relies on a spec default", () => {
+    // Negative control: a tool declaring only readOnlyHint (the previous
+    // shape) must fail the check, or the check above proves nothing.
+    expect(() =>
+      assertFullAnnotations([{ name: "fake_tool", annotations: { readOnlyHint: true } }]),
+    ).toThrow();
   });
 });
 
