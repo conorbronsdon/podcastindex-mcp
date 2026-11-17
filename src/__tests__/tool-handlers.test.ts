@@ -386,3 +386,52 @@ describe("ToolHandlers.handleToolCall", () => {
     });
   });
 });
+
+// Real PodcastIndexApiClient + real axios against a loopback server (never the
+// live API): a stalled upstream must come back as an isError tool result
+// instead of leaving the tool call pending.
+describe("request timeout through the real client", () => {
+  let server: import("node:http").Server;
+  let baseURL: string;
+  let stall: boolean;
+
+  beforeEach(async () => {
+    const http = await import("node:http");
+    stall = true;
+    server = http.createServer((_req, res) => {
+      if (stall) return; // accept the request, never answer
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "true", count: 0 }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const { port } = server.address() as import("node:net").AddressInfo;
+    baseURL = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  function loopbackHandlers(timeoutMs: number): ToolHandlers {
+    const client = new PodcastIndexApiClient("example-key", "example-secret", { timeoutMs });
+    (client as unknown as { api: { defaults: { baseURL: string } } }).api.defaults.baseURL = baseURL;
+    return new ToolHandlers(client);
+  }
+
+  it("returns isError when the API does not answer within the timeout", async () => {
+    const result = await loopbackHandlers(100).handleToolCall("stats_current", {});
+    expect(result).toEqual({
+      content: [{ type: "text", text: "API error (unknown): timeout of 100ms exceeded" }],
+      isError: true,
+    });
+  }, 2_000);
+
+  it("returns the data when the API answers within the timeout", async () => {
+    stall = false;
+    const result = await loopbackHandlers(1_000).handleToolCall("stats_current", {});
+    expect(result).toEqual({
+      content: [{ type: "text", text: JSON.stringify({ status: "true", count: 0 }, null, 2) }],
+    });
+  }, 2_000);
+});
