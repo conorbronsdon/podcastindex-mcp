@@ -29,10 +29,24 @@ import {
  * `annotations: READ_ONLY` so MCP clients can reason about side effects
  * (and skip write-consent prompts); the completeness test in
  * __tests__/tool-handlers.test.ts enforces that every tool carries it.
+ *
+ * Every hint is spelled out rather than left to the spec defaults, because
+ * the defaults are the unsafe values (destructiveHint and openWorldHint
+ * default to true, idempotentHint to false):
+ * - readOnlyHint: true    — no tool modifies anything
+ * - destructiveHint: false — nothing is deleted or overwritten
+ * - idempotentHint: true  — repeating a call has no additional effect
+ * - openWorldHint: true   — every call reaches the external Podcast Index API
+ *
  * If a write tool is ever added, switch to per-tool classification (see
  * gws-mcp-server's buildAnnotations pattern) instead of weakening this.
  */
-const READ_ONLY = { readOnlyHint: true } as const;
+const READ_ONLY = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
 
 export const TOOLS = [
   {

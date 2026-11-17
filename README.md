@@ -109,7 +109,7 @@ Add to your project's `.mcp.json`:
 
 ## Tools
 
-This server is entirely read-only: every tool declares the MCP [tool annotation](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) `readOnlyHint: true`, so clients know no call mutates anything and can skip write-consent prompts.
+This server is entirely read-only: every tool declares the MCP [tool annotations](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, and `openWorldHint: true` (each call queries the external Podcast Index API), so clients know no call mutates anything and can skip write-consent prompts.
 
 | Tool | Description |
 |------|-------------|
