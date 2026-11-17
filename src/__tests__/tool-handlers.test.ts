@@ -2,10 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   McpError,
   ErrorCode,
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import {
@@ -14,6 +11,7 @@ import {
   MISSING_CREDENTIALS_MESSAGE,
 } from "../tool-handlers.js";
 import { PodcastIndexApiClient } from "../api-client.js";
+import { createServer } from "../server.js";
 import { AuthenticationError, RateLimitError, ServerError } from "../errors.js";
 
 // Create a mock API client
@@ -138,6 +136,7 @@ describe("TOOLS", () => {
 // so the model sees the message and can correct its call. Missing credentials
 // and unknown tools stay JSON-RPC errors.
 async function expectInvalidArguments(name: string, args: unknown) {
+  vi.clearAllMocks();
   const result = await handlers.handleToolCall(name, args);
   expect(result.isError).toBe(true);
   expect(result.content).toHaveLength(1);
@@ -146,6 +145,7 @@ async function expectInvalidArguments(name: string, args: unknown) {
   for (const fn of Object.values(mockApiClient)) {
     expect(fn).not.toHaveBeenCalled();
   }
+  return result.content[0].text as string;
 }
 
 describe("ToolHandlers.handleToolCall", () => {
@@ -495,10 +495,8 @@ describe("advertised bounds (#35)", () => {
     "%s returns an isError result naming the bound for max outside 1..100",
     async (name) => {
       for (const max of [0, 101, 5000, 2.5]) {
-        vi.clearAllMocks();
-        await expectInvalidArguments(name, { ...requiredArgs[name], max });
-        const result = await handlers.handleToolCall(name, { ...requiredArgs[name], max });
-        expect(result.content[0].text).toContain("max: integer 1-100");
+        const text = await expectInvalidArguments(name, { ...requiredArgs[name], max });
+        expect(text).toContain("max: integer 1-100");
       }
     }
   );
@@ -513,9 +511,8 @@ describe("advertised bounds (#35)", () => {
   });
 
   it("returns an isError result for a fractional id and does not call the API", async () => {
-    await expectInvalidArguments("podcast_by_feed_id", { id: 1.5 });
-    const result = await handlers.handleToolCall("podcast_by_feed_id", { id: 1.5 });
-    expect(result.content[0].text).toBe(
+    const text = await expectInvalidArguments("podcast_by_feed_id", { id: 1.5 });
+    expect(text).toBe(
       "Invalid arguments for podcast_by_feed_id: expected { id: integer (required) }"
     );
   });
@@ -541,15 +538,9 @@ describe("advertised bounds (#35)", () => {
 // CallToolResult with isError, not as a JSON-RPC error the client may hide
 // from the model.
 describe("validation errors over MCP (#35)", () => {
+  // The production server from src/server.ts, which src/index.ts connects to stdio.
   async function connect(toolHandlers: ToolHandlers) {
-    const server = new Server(
-      { name: "podcastindex-mcp-test", version: "0.0.0" },
-      { capabilities: { tools: {} } }
-    );
-    server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
-    server.setRequestHandler(CallToolRequestSchema, async (request) =>
-      toolHandlers.handleToolCall(request.params.name, request.params.arguments ?? {})
-    );
+    const server = createServer(toolHandlers);
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "test-client", version: "0.0.0" });
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);

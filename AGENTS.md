@@ -5,7 +5,8 @@ The repository contract for every agent runtime. Codex and other runtimes read t
 MCP server for the Podcast Index API — search podcasts, track appearances, monitor trending, check feed health.
 
 ## Architecture
-- `src/index.ts` — MCP server bootstrap, env var validation, request handlers
+- `src/index.ts` — stdio bootstrap and env var validation
+- `src/server.ts` — `createServer()`: the MCP server and its `tools/list` / `tools/call` request handlers
 - `src/api-client.ts` — HTTP client with HMAC SHA1 auth header generation
 - `src/tool-handlers.ts` — 18 tool handlers with input validation and error handling
 - `src/types.ts` — TypeScript interfaces and type guard functions for all tool args; each guard enforces what its `inputSchema` advertises (`max` 1–100, integer `id`/`since`/`before`)

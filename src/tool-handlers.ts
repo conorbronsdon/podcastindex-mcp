@@ -464,7 +464,10 @@ function describeArguments(tool: (typeof TOOLS)[number]): string {
  * unknown tools stay JSON-RPC errors.
  */
 function invalidArguments(name: string): CallToolResult {
-  const tool = TOOLS.find((t) => t.name === name)!;
+  const tool = TOOLS.find((t) => t.name === name);
+  if (!tool) {
+    throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+  }
   return {
     content: [
       { type: "text" as const, text: `Invalid arguments for ${name}: expected ${describeArguments(tool)}` },
