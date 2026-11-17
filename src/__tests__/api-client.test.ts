@@ -33,6 +33,25 @@ beforeEach(async () => {
 });
 
 describe("PodcastIndexApiClient", () => {
+  describe("request timeout", () => {
+    it("creates the axios instance with a 30s timeout by default", async () => {
+      const axios = await import("axios");
+      expect(axios.default.create).toHaveBeenLastCalledWith({
+        baseURL: "https://api.podcastindex.org/api/1.0",
+        timeout: 30_000,
+      });
+    });
+
+    it("uses an explicit timeoutMs when given", async () => {
+      const axios = await import("axios");
+      new PodcastIndexApiClient("example-key", "example-secret", { timeoutMs: 250 });
+      expect(axios.default.create).toHaveBeenLastCalledWith({
+        baseURL: "https://api.podcastindex.org/api/1.0",
+        timeout: 250,
+      });
+    });
+  });
+
   describe("auth headers", () => {
     it("sends correct auth headers with every request", async () => {
       await client.searchByPerson({ q: "test" });

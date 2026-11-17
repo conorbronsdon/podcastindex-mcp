@@ -20,16 +20,29 @@ import type {
   RecentNewFeedsArgs,
 } from "./types.js";
 
+/**
+ * Per-request timeout. Axios has none by default, so a stalled response would
+ * leave the tool call pending forever instead of returning an isError result.
+ * Kept below the MCP SDK client's 60s default request timeout so the caller
+ * sees the Podcast Index error, not a generic client-side timeout.
+ */
+export const REQUEST_TIMEOUT_MS = 30_000;
+
 export class PodcastIndexApiClient {
   private apiKey: string;
   private apiSecret: string;
   private api: AxiosInstance;
 
-  constructor(apiKey: string, apiSecret: string) {
+  constructor(
+    apiKey: string,
+    apiSecret: string,
+    options: { timeoutMs?: number } = {}
+  ) {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
     this.api = axios.create({
       baseURL: "https://api.podcastindex.org/api/1.0",
+      timeout: options.timeoutMs ?? REQUEST_TIMEOUT_MS,
     });
   }
 

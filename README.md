@@ -134,7 +134,7 @@ This server is entirely read-only: every tool declares the MCP [tool annotations
 
 ### Typed errors
 
-API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every API failure (including network errors with no HTTP status) comes back as a tool result with `isError: true`. The typed hierarchy makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
+API failures are mapped to a typed error hierarchy (`PodcastIndexError` base, with `AuthenticationError`, `RateLimitError`, `ValidationError`, `NotFoundError`, and `ServerError` subclasses keyed off HTTP status) in `src/errors.ts`. Every API failure (including network errors with no HTTP status, and requests that get no response within 30 seconds) comes back as a tool result with `isError: true`. The typed hierarchy makes the message specific to what went wrong (bad credentials vs. rate limiting vs. a malformed request, etc.) instead of a single generic "API error" string.
 
 Three failures are raised before any API call and come back as JSON-RPC errors (`McpError`), not as `isError` tool results:
 
