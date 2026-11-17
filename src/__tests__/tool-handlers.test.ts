@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import {
+  McpError,
+  ErrorCode,
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import {
   ToolHandlers,
   TOOLS,
@@ -126,6 +134,20 @@ describe("TOOLS", () => {
   });
 });
 
+// #35: argument-validation failures are tool execution errors (MCP 2025-11-25),
+// so the model sees the message and can correct its call. Missing credentials
+// and unknown tools stay JSON-RPC errors.
+async function expectInvalidArguments(name: string, args: unknown) {
+  const result = await handlers.handleToolCall(name, args);
+  expect(result.isError).toBe(true);
+  expect(result.content).toHaveLength(1);
+  expect(result.content[0].type).toBe("text");
+  expect(result.content[0].text).toMatch(/^Invalid arguments/);
+  for (const fn of Object.values(mockApiClient)) {
+    expect(fn).not.toHaveBeenCalled();
+  }
+}
+
 describe("ToolHandlers.handleToolCall", () => {
   describe("search_by_person", () => {
     it("returns JSON content on success", async () => {
@@ -134,8 +156,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.searchByPerson).toHaveBeenCalledWith({ q: "test" });
     });
 
-    it("throws McpError on invalid args", async () => {
-      await expect(handlers.handleToolCall("search_by_person", {})).rejects.toThrow(McpError);
+    it("returns an isError result on invalid args", async () => {
+      await expectInvalidArguments("search_by_person", {});
     });
   });
 
@@ -145,8 +167,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.searchByTerm).toHaveBeenCalledWith({ q: "AI" });
     });
 
-    it("throws on missing q", async () => {
-      await expect(handlers.handleToolCall("search_by_term", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing q", async () => {
+      await expectInvalidArguments("search_by_term", {});
     });
   });
 
@@ -156,8 +178,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.podcastByFeedUrl).toHaveBeenCalledWith({ url: "https://example.com/feed" });
     });
 
-    it("throws on missing url", async () => {
-      await expect(handlers.handleToolCall("podcast_by_feed_url", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing url", async () => {
+      await expectInvalidArguments("podcast_by_feed_url", {});
     });
   });
 
@@ -167,8 +189,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.podcastByFeedId).toHaveBeenCalledWith({ id: 123 });
     });
 
-    it("throws on string id", async () => {
-      await expect(handlers.handleToolCall("podcast_by_feed_id", { id: "123" })).rejects.toThrow(McpError);
+    it("returns an isError result on string id", async () => {
+      await expectInvalidArguments("podcast_by_feed_id", { id: "123" });
     });
   });
 
@@ -185,8 +207,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.episodesByFeedId).toHaveBeenCalledWith({ id: 100 });
     });
 
-    it("throws on missing id", async () => {
-      await expect(handlers.handleToolCall("episodes_by_feed_id", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing id", async () => {
+      await expectInvalidArguments("episodes_by_feed_id", {});
     });
   });
 
@@ -210,8 +232,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.searchByTitle).toHaveBeenCalledWith({ q: "Chain of Thought" });
     });
 
-    it("throws on missing q", async () => {
-      await expect(handlers.handleToolCall("search_by_title", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing q", async () => {
+      await expectInvalidArguments("search_by_title", {});
     });
   });
 
@@ -221,12 +243,12 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.episodeById).toHaveBeenCalledWith({ id: 999 });
     });
 
-    it("throws on missing id", async () => {
-      await expect(handlers.handleToolCall("episode_by_id", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing id", async () => {
+      await expectInvalidArguments("episode_by_id", {});
     });
 
-    it("throws on string id", async () => {
-      await expect(handlers.handleToolCall("episode_by_id", { id: "999" })).rejects.toThrow(McpError);
+    it("returns an isError result on string id", async () => {
+      await expectInvalidArguments("episode_by_id", { id: "999" });
     });
   });
 
@@ -243,8 +265,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.podcastByItunesId).toHaveBeenCalledWith({ id: 123456 });
     });
 
-    it("throws on missing id", async () => {
-      await expect(handlers.handleToolCall("podcast_by_itunes_id", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing id", async () => {
+      await expectInvalidArguments("podcast_by_itunes_id", {});
     });
   });
 
@@ -254,8 +276,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.podcastByGuid).toHaveBeenCalledWith({ guid: "abc-123" });
     });
 
-    it("throws on missing guid", async () => {
-      await expect(handlers.handleToolCall("podcast_by_guid", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing guid", async () => {
+      await expectInvalidArguments("podcast_by_guid", {});
     });
   });
 
@@ -265,8 +287,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.valueByFeedId).toHaveBeenCalledWith({ id: 100 });
     });
 
-    it("throws on missing id", async () => {
-      await expect(handlers.handleToolCall("value_by_feed_id", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing id", async () => {
+      await expectInvalidArguments("value_by_feed_id", {});
     });
   });
 
@@ -276,8 +298,8 @@ describe("ToolHandlers.handleToolCall", () => {
       expect(mockApiClient.valueByFeedUrl).toHaveBeenCalledWith({ url: "https://example.com/feed.xml" });
     });
 
-    it("throws on missing url", async () => {
-      await expect(handlers.handleToolCall("value_by_feed_url", {})).rejects.toThrow(McpError);
+    it("returns an isError result on missing url", async () => {
+      await expectInvalidArguments("value_by_feed_url", {});
     });
   });
 
@@ -434,4 +456,119 @@ describe("request timeout through the real client", () => {
       content: [{ type: "text", text: JSON.stringify({ status: "true", count: 0 }, null, 2) }],
     });
   }, 2_000);
+});
+
+describe("advertised bounds (#35)", () => {
+  const toolsWithMax = TOOLS.filter((t) => "max" in t.inputSchema.properties);
+  const integerFields = ["id", "since", "before"] as const;
+
+  it("every max is advertised as an integer from 1 to 100", () => {
+    expect(toolsWithMax).toHaveLength(9);
+    for (const tool of toolsWithMax) {
+      const max = (tool.inputSchema.properties as Record<string, Record<string, unknown>>).max;
+      expect(max, tool.name).toMatchObject({ type: "integer", minimum: 1, maximum: 100 });
+    }
+  });
+
+  it("every id, since and before is advertised as an integer", () => {
+    let seen = 0;
+    for (const tool of TOOLS) {
+      const props = tool.inputSchema.properties as Record<string, Record<string, unknown>>;
+      for (const field of integerFields) {
+        if (props[field]) {
+          seen++;
+          expect(props[field].type, `${tool.name}.${field}`).toBe("integer");
+        }
+      }
+    }
+    expect(seen).toBe(10);
+  });
+
+  const requiredArgs: Record<string, Record<string, unknown>> = {
+    search_by_person: { q: "x" },
+    search_by_term: { q: "x" },
+    search_by_title: { q: "x" },
+    episodes_by_feed_id: { id: 1 },
+  };
+
+  it.each(toolsWithMax.map((t) => t.name))(
+    "%s returns an isError result naming the bound for max outside 1..100",
+    async (name) => {
+      for (const max of [0, 101, 5000, 2.5]) {
+        vi.clearAllMocks();
+        await expectInvalidArguments(name, { ...requiredArgs[name], max });
+        const result = await handlers.handleToolCall(name, { ...requiredArgs[name], max });
+        expect(result.content[0].text).toContain("max: integer 1-100");
+      }
+    }
+  );
+
+  it.each(toolsWithMax.map((t) => t.name))("%s still calls the API at max 1 and 100", async (name) => {
+    for (const max of [1, 100]) {
+      const result = await handlers.handleToolCall(name, { ...requiredArgs[name], max });
+      expect(result.isError, `max=${max}`).toBeUndefined();
+    }
+    const calls = Object.values(mockApiClient).reduce((n, fn) => n + fn.mock.calls.length, 0);
+    expect(calls).toBe(2);
+  });
+
+  it("returns an isError result for a fractional id and does not call the API", async () => {
+    await expectInvalidArguments("podcast_by_feed_id", { id: 1.5 });
+    const result = await handlers.handleToolCall("podcast_by_feed_id", { id: 1.5 });
+    expect(result.content[0].text).toBe(
+      "Invalid arguments for podcast_by_feed_id: expected { id: integer (required) }"
+    );
+  });
+
+  it("returns an isError result for a fractional since or before", async () => {
+    await expectInvalidArguments("recent_feeds", { since: 1700000000.5 });
+    await expectInvalidArguments("recent_episodes", { before: Number.NaN });
+  });
+});
+
+// The same calls over a real MCP client: a validation failure must arrive as a
+// CallToolResult with isError, not as a JSON-RPC error the client may hide
+// from the model.
+describe("validation errors over MCP (#35)", () => {
+  async function connect(toolHandlers: ToolHandlers) {
+    const server = new Server(
+      { name: "podcastindex-mcp-test", version: "0.0.0" },
+      { capabilities: { tools: {} } }
+    );
+    server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
+    server.setRequestHandler(CallToolRequestSchema, async (request) =>
+      toolHandlers.handleToolCall(request.params.name, request.params.arguments ?? {})
+    );
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "test-client", version: "0.0.0" });
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+    return client;
+  }
+
+  it("returns isError for out-of-range max instead of a -32602 error", async () => {
+    const client = await connect(handlers);
+    const result = await client.callTool({ name: "search_by_person", arguments: { q: "x", max: 5000 } });
+    expect(result.isError).toBe(true);
+    expect((result.content as Array<{ text: string }>)[0].text).toMatch(/^Invalid arguments for search_by_person/);
+    expect(mockApiClient.searchByPerson).not.toHaveBeenCalled();
+    await client.close();
+  });
+
+  it("keeps missing credentials as a -32600 protocol error", async () => {
+    const client = await connect(
+      new ToolHandlers(mockApiClient as unknown as PodcastIndexApiClient, false)
+    );
+    await expect(
+      client.callTool({ name: "search_by_person", arguments: { q: "x" } })
+    ).rejects.toMatchObject({ code: ErrorCode.InvalidRequest });
+    await client.close();
+  });
+
+  it("keeps an unknown tool as a -32601 protocol error", async () => {
+    const client = await connect(handlers);
+    await expect(client.callTool({ name: "nonexistent_tool", arguments: {} })).rejects.toMatchObject({
+      code: ErrorCode.MethodNotFound,
+    });
+    await client.close();
+  });
 });
