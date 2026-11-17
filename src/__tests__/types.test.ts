@@ -283,3 +283,61 @@ describe("isStatsCurrentArgs", () => {
     expect(isStatsCurrentArgs([])).toBe(false);
   });
 });
+
+// #35: the guards must enforce what each inputSchema advertises. `max` is an
+// integer from 1 to 100; `id`, `since` and `before` are integers.
+describe("advertised bounds are enforced", () => {
+  type Guard = (args: unknown) => boolean;
+  const withMax: Array<[string, Guard, Record<string, unknown>]> = [
+    ["isSearchByPersonArgs", isSearchByPersonArgs, { q: "x" }],
+    ["isSearchByTermArgs", isSearchByTermArgs, { q: "x" }],
+    ["isTrendingPodcastsArgs", isTrendingPodcastsArgs, {}],
+    ["isEpisodesByFeedIdArgs", isEpisodesByFeedIdArgs, { id: 1 }],
+    ["isRecentEpisodesArgs", isRecentEpisodesArgs, {}],
+    ["isSearchByTitleArgs", isSearchByTitleArgs, { q: "x" }],
+    ["isEpisodesLiveArgs", isEpisodesLiveArgs, {}],
+    ["isRecentFeedsArgs", isRecentFeedsArgs, {}],
+    ["isRecentNewFeedsArgs", isRecentNewFeedsArgs, {}],
+  ];
+  const withId: Array<[string, Guard]> = [
+    ["isPodcastByFeedIdArgs", isPodcastByFeedIdArgs],
+    ["isEpisodesByFeedIdArgs", isEpisodesByFeedIdArgs],
+    ["isEpisodeByIdArgs", isEpisodeByIdArgs],
+    ["isPodcastByItunesIdArgs", isPodcastByItunesIdArgs],
+    ["isValueByFeedIdArgs", isValueByFeedIdArgs],
+  ];
+  const withTimestamp: Array<[string, Guard, string, Record<string, unknown>]> = [
+    ["isTrendingPodcastsArgs", isTrendingPodcastsArgs, "since", {}],
+    ["isEpisodesByFeedIdArgs", isEpisodesByFeedIdArgs, "since", { id: 1 }],
+    ["isRecentFeedsArgs", isRecentFeedsArgs, "since", {}],
+    ["isRecentNewFeedsArgs", isRecentNewFeedsArgs, "since", {}],
+    ["isRecentEpisodesArgs", isRecentEpisodesArgs, "before", {}],
+  ];
+  const nonIntegers = [1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+
+  it.each(withMax)("%s accepts max at both ends of 1..100", (_name, guard, base) => {
+    expect(guard({ ...base, max: 1 })).toBe(true);
+    expect(guard({ ...base, max: 100 })).toBe(true);
+  });
+  it.each(withMax)("%s rejects max outside 1..100 or not an integer", (_name, guard, base) => {
+    for (const max of [0, -1, 101, 5000, ...nonIntegers]) {
+      expect(guard({ ...base, max }), `max=${max}`).toBe(false);
+    }
+  });
+  it.each(withId)("%s accepts an integer id", (_name, guard) => {
+    expect(guard({ id: 920666 })).toBe(true);
+  });
+  it.each(withId)("%s rejects a non-integer id", (_name, guard) => {
+    for (const id of nonIntegers) {
+      expect(guard({ id }), `id=${id}`).toBe(false);
+    }
+  });
+  it.each(withTimestamp)("%s accepts an integer %s", (_name, guard, key, base) => {
+    expect(guard({ ...base, [key]: 1700000000 })).toBe(true);
+  });
+  it.each(withTimestamp)("%s rejects a non-integer %s", (_name, guard, key, base) => {
+    for (const value of nonIntegers) {
+      expect(guard({ ...base, [key]: value }), `${key}=${value}`).toBe(false);
+    }
+  });
+});

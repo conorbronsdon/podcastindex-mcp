@@ -1,3 +1,14 @@
+/** Upper bound every `max` argument advertises in its inputSchema. */
+export const MAX_RESULTS_LIMIT = 100;
+
+function isOptionalMax(max: unknown): boolean {
+  return max === undefined || (Number.isInteger(max) && (max as number) >= 1 && (max as number) <= MAX_RESULTS_LIMIT);
+}
+
+function isOptionalInteger(value: unknown): boolean {
+  return value === undefined || Number.isInteger(value);
+}
+
 function isPlainObject(args: unknown): args is object {
   if (args === null || typeof args !== "object") return false;
   if (Object.prototype.toString.call(args) !== "[object Object]") return false;
@@ -16,7 +27,7 @@ export function isSearchByPersonArgs(args: unknown): args is SearchByPersonArgs 
   const { q, max, fulltext } = args as SearchByPersonArgs;
   return (
     typeof q === "string" &&
-    (max === undefined || typeof max === "number") &&
+    isOptionalMax(max) &&
     (fulltext === undefined || typeof fulltext === "boolean")
   );
 }
@@ -33,7 +44,7 @@ export function isSearchByTermArgs(args: unknown): args is SearchByTermArgs {
   const { q, max, clean, fulltext } = args as SearchByTermArgs;
   return (
     typeof q === "string" &&
-    (max === undefined || typeof max === "number") &&
+    isOptionalMax(max) &&
     (clean === undefined || typeof clean === "boolean") &&
     (fulltext === undefined || typeof fulltext === "boolean")
   );
@@ -56,7 +67,7 @@ export interface PodcastByFeedIdArgs {
 export function isPodcastByFeedIdArgs(args: unknown): args is PodcastByFeedIdArgs {
   if (!isPlainObject(args)) return false;
   const { id } = args as PodcastByFeedIdArgs;
-  return typeof id === "number";
+  return Number.isInteger(id);
 }
 
 export interface TrendingPodcastsArgs {
@@ -70,10 +81,10 @@ export function isTrendingPodcastsArgs(args: unknown): args is TrendingPodcastsA
   if (!isPlainObject(args)) return false;
   const { max, lang, cat, since } = args as TrendingPodcastsArgs;
   return (
-    (max === undefined || typeof max === "number") &&
+    isOptionalMax(max) &&
     (lang === undefined || typeof lang === "string") &&
     (cat === undefined || typeof cat === "string") &&
-    (since === undefined || typeof since === "number")
+    isOptionalInteger(since)
   );
 }
 
@@ -88,9 +99,9 @@ export function isEpisodesByFeedIdArgs(args: unknown): args is EpisodesByFeedIdA
   if (!isPlainObject(args)) return false;
   const { id, max, since, fulltext } = args as EpisodesByFeedIdArgs;
   return (
-    typeof id === "number" &&
-    (max === undefined || typeof max === "number") &&
-    (since === undefined || typeof since === "number") &&
+    Number.isInteger(id) &&
+    isOptionalMax(max) &&
+    isOptionalInteger(since) &&
     (fulltext === undefined || typeof fulltext === "boolean")
   );
 }
@@ -106,9 +117,9 @@ export function isRecentEpisodesArgs(args: unknown): args is RecentEpisodesArgs 
   if (!isPlainObject(args)) return false;
   const { max, excludeString, before, fulltext } = args as RecentEpisodesArgs;
   return (
-    (max === undefined || typeof max === "number") &&
+    isOptionalMax(max) &&
     (excludeString === undefined || typeof excludeString === "string") &&
-    (before === undefined || typeof before === "number") &&
+    isOptionalInteger(before) &&
     (fulltext === undefined || typeof fulltext === "boolean")
   );
 }
@@ -131,7 +142,7 @@ export function isSearchByTitleArgs(args: unknown): args is SearchByTitleArgs {
   const { q, max, clean, fulltext } = args as SearchByTitleArgs;
   return (
     typeof q === "string" &&
-    (max === undefined || typeof max === "number") &&
+    isOptionalMax(max) &&
     (clean === undefined || typeof clean === "boolean") &&
     (fulltext === undefined || typeof fulltext === "boolean")
   );
@@ -145,7 +156,7 @@ export interface EpisodeByIdArgs {
 export function isEpisodeByIdArgs(args: unknown): args is EpisodeByIdArgs {
   if (!isPlainObject(args)) return false;
   const { id, fulltext } = args as EpisodeByIdArgs;
-  return typeof id === "number" && (fulltext === undefined || typeof fulltext === "boolean");
+  return Number.isInteger(id) && (fulltext === undefined || typeof fulltext === "boolean");
 }
 
 export interface EpisodesLiveArgs {
@@ -155,7 +166,7 @@ export interface EpisodesLiveArgs {
 export function isEpisodesLiveArgs(args: unknown): args is EpisodesLiveArgs {
   if (!isPlainObject(args)) return false;
   const { max } = args as EpisodesLiveArgs;
-  return max === undefined || typeof max === "number";
+  return isOptionalMax(max);
 }
 
 export interface PodcastByItunesIdArgs {
@@ -165,7 +176,7 @@ export interface PodcastByItunesIdArgs {
 export function isPodcastByItunesIdArgs(args: unknown): args is PodcastByItunesIdArgs {
   if (!isPlainObject(args)) return false;
   const { id } = args as PodcastByItunesIdArgs;
-  return typeof id === "number";
+  return Number.isInteger(id);
 }
 
 export interface PodcastByGuidArgs {
@@ -185,7 +196,7 @@ export interface ValueByFeedIdArgs {
 export function isValueByFeedIdArgs(args: unknown): args is ValueByFeedIdArgs {
   if (!isPlainObject(args)) return false;
   const { id } = args as ValueByFeedIdArgs;
-  return typeof id === "number";
+  return Number.isInteger(id);
 }
 
 export interface ValueByFeedUrlArgs {
@@ -210,8 +221,8 @@ export function isRecentFeedsArgs(args: unknown): args is RecentFeedsArgs {
   if (!isPlainObject(args)) return false;
   const { max, since, lang, cat, notcat } = args as RecentFeedsArgs;
   return (
-    (max === undefined || typeof max === "number") &&
-    (since === undefined || typeof since === "number") &&
+    isOptionalMax(max) &&
+    isOptionalInteger(since) &&
     (lang === undefined || typeof lang === "string") &&
     (cat === undefined || typeof cat === "string") &&
     (notcat === undefined || typeof notcat === "string")
@@ -229,8 +240,8 @@ export function isRecentNewFeedsArgs(args: unknown): args is RecentNewFeedsArgs 
   if (!isPlainObject(args)) return false;
   const { max, since, feedid, desc } = args as RecentNewFeedsArgs;
   return (
-    (max === undefined || typeof max === "number") &&
-    (since === undefined || typeof since === "number") &&
+    isOptionalMax(max) &&
+    isOptionalInteger(since) &&
     (feedid === undefined || typeof feedid === "string") &&
     (desc === undefined || typeof desc === "boolean")
   );

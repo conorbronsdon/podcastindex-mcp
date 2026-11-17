@@ -1,4 +1,4 @@
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+import { McpError, ErrorCode, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import axios from "axios";
 import { PodcastIndexApiClient } from "./api-client.js";
 import { PodcastIndexError, extractErrorDetail } from "./errors.js";
@@ -62,7 +62,7 @@ export const TOOLS = [
           description: 'Person name to search for (e.g. "Conor Bronsdon")',
         },
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 10)",
           minimum: 1,
           maximum: 100,
@@ -88,7 +88,7 @@ export const TOOLS = [
           description: "Search term",
         },
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 10)",
           minimum: 1,
           maximum: 100,
@@ -130,7 +130,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         id: {
-          type: "number",
+          type: "integer",
           description: "Podcast Index feed ID",
         },
       },
@@ -146,7 +146,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results (default 10)",
           minimum: 1,
           maximum: 100,
@@ -161,7 +161,7 @@ export const TOOLS = [
             'Category filter — name or ID (e.g. "Technology", "102")',
         },
         since: {
-          type: "number",
+          type: "integer",
           description:
             "Only return podcasts trending since this Unix timestamp",
         },
@@ -177,17 +177,17 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         id: {
-          type: "number",
+          type: "integer",
           description: "Podcast Index feed ID",
         },
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum episodes to return (default 10)",
           minimum: 1,
           maximum: 100,
         },
         since: {
-          type: "number",
+          type: "integer",
           description: "Only return episodes published since this Unix timestamp",
         },
         fulltext: {
@@ -207,7 +207,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results (default 10)",
           minimum: 1,
           maximum: 100,
@@ -217,7 +217,7 @@ export const TOOLS = [
           description: "Exclude episodes containing this string in title",
         },
         before: {
-          type: "number",
+          type: "integer",
           description: "Only return episodes before this episode ID",
         },
         fulltext: {
@@ -249,7 +249,7 @@ export const TOOLS = [
           description: 'Podcast title to search for (e.g. "Chain of Thought")',
         },
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 10)",
           minimum: 1,
           maximum: 100,
@@ -275,7 +275,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         id: {
-          type: "number",
+          type: "integer",
           description: "Podcast Index episode ID",
         },
         fulltext: {
@@ -295,7 +295,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 10)",
           minimum: 1,
           maximum: 100,
@@ -312,7 +312,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         id: {
-          type: "number",
+          type: "integer",
           description: "Apple Podcasts (iTunes) feed ID",
         },
       },
@@ -344,7 +344,7 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         id: {
-          type: "number",
+          type: "integer",
           description: "Podcast Index feed ID",
         },
       },
@@ -376,13 +376,13 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 40)",
           minimum: 1,
           maximum: 100,
         },
         since: {
-          type: "number",
+          type: "integer",
           description: "Only return feeds updated since this Unix timestamp",
         },
         lang: {
@@ -409,13 +409,13 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         max: {
-          type: "number",
+          type: "integer",
           description: "Maximum results to return (default 40)",
           minimum: 1,
           maximum: 100,
         },
         since: {
-          type: "number",
+          type: "integer",
           description: "Only return feeds added since this Unix timestamp",
         },
         feedid: {
@@ -445,6 +445,37 @@ export const MISSING_CREDENTIALS_MESSAGE =
   "PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET environment variables are required. " +
   "Get free API credentials at https://api.podcastindex.org/, set both variables, and restart the server.";
 
+type PropertySchema = { type: string; minimum?: number; maximum?: number };
+
+function describeArguments(tool: (typeof TOOLS)[number]): string {
+  const required: readonly string[] = ("required" in tool.inputSchema ? tool.inputSchema.required : undefined) ?? [];
+  const fields = Object.entries(tool.inputSchema.properties as Record<string, PropertySchema>).map(
+    ([key, prop]) => {
+      const range = prop.minimum !== undefined && prop.maximum !== undefined ? ` ${prop.minimum}-${prop.maximum}` : "";
+      return `${key}: ${prop.type}${range}${required.includes(key) ? " (required)" : ""}`;
+    }
+  );
+  return fields.length ? `{ ${fields.join(", ")} }` : "{}";
+}
+
+/**
+ * Argument-validation failures are tool execution errors (MCP 2025-11-25), so
+ * the model sees the message and can correct its call. Missing credentials and
+ * unknown tools stay JSON-RPC errors.
+ */
+function invalidArguments(name: string): CallToolResult {
+  const tool = TOOLS.find((t) => t.name === name);
+  if (!tool) {
+    throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+  }
+  return {
+    content: [
+      { type: "text" as const, text: `Invalid arguments for ${name}: expected ${describeArguments(tool)}` },
+    ],
+    isError: true,
+  };
+}
+
 export class ToolHandlers {
   private apiClient: PodcastIndexApiClient;
   private hasCredentials: boolean;
@@ -454,7 +485,7 @@ export class ToolHandlers {
     this.hasCredentials = hasCredentials;
   }
 
-  async handleToolCall(name: string, args: unknown) {
+  async handleToolCall(name: string, args: unknown): Promise<CallToolResult> {
     if (!this.hasCredentials) {
       throw new McpError(ErrorCode.InvalidRequest, MISSING_CREDENTIALS_MESSAGE);
     }
@@ -462,7 +493,7 @@ export class ToolHandlers {
       switch (name) {
         case "search_by_person": {
           if (!isSearchByPersonArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'q' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.searchByPerson(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -470,7 +501,7 @@ export class ToolHandlers {
 
         case "search_by_term": {
           if (!isSearchByTermArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'q' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.searchByTerm(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -478,7 +509,7 @@ export class ToolHandlers {
 
         case "podcast_by_feed_url": {
           if (!isPodcastByFeedUrlArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'url' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.podcastByFeedUrl(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -486,7 +517,7 @@ export class ToolHandlers {
 
         case "podcast_by_feed_id": {
           if (!isPodcastByFeedIdArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.podcastByFeedId(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -494,7 +525,7 @@ export class ToolHandlers {
 
         case "trending_podcasts": {
           if (!isTrendingPodcastsArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.trendingPodcasts(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -502,7 +533,7 @@ export class ToolHandlers {
 
         case "episodes_by_feed_id": {
           if (!isEpisodesByFeedIdArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.episodesByFeedId(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -510,7 +541,7 @@ export class ToolHandlers {
 
         case "recent_episodes": {
           if (!isRecentEpisodesArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.recentEpisodes(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -518,7 +549,7 @@ export class ToolHandlers {
 
         case "categories_list": {
           if (!isCategoriesListArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.categoriesList();
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -526,7 +557,7 @@ export class ToolHandlers {
 
         case "search_by_title": {
           if (!isSearchByTitleArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'q' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.searchByTitle(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -534,7 +565,7 @@ export class ToolHandlers {
 
         case "episode_by_id": {
           if (!isEpisodeByIdArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.episodeById(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -542,7 +573,7 @@ export class ToolHandlers {
 
         case "episodes_live": {
           if (!isEpisodesLiveArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.episodesLive(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -550,7 +581,7 @@ export class ToolHandlers {
 
         case "podcast_by_itunes_id": {
           if (!isPodcastByItunesIdArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.podcastByItunesId(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -558,7 +589,7 @@ export class ToolHandlers {
 
         case "podcast_by_guid": {
           if (!isPodcastByGuidArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'guid' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.podcastByGuid(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -566,7 +597,7 @@ export class ToolHandlers {
 
         case "value_by_feed_id": {
           if (!isValueByFeedIdArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'id' (number)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.valueByFeedId(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -574,7 +605,7 @@ export class ToolHandlers {
 
         case "value_by_feed_url": {
           if (!isValueByFeedUrlArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments: requires 'url' (string)");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.valueByFeedUrl(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -582,7 +613,7 @@ export class ToolHandlers {
 
         case "recent_feeds": {
           if (!isRecentFeedsArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.recentFeeds(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -590,7 +621,7 @@ export class ToolHandlers {
 
         case "recent_new_feeds": {
           if (!isRecentNewFeedsArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.recentNewFeeds(args);
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -598,7 +629,7 @@ export class ToolHandlers {
 
         case "stats_current": {
           if (!isStatsCurrentArgs(args)) {
-            throw new McpError(ErrorCode.InvalidParams, "Invalid arguments");
+            return invalidArguments(name);
           }
           const data = await this.apiClient.statsCurrent();
           return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
