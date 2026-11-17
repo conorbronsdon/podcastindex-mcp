@@ -6,14 +6,14 @@ MCP server for the Podcast Index API — search podcasts, track appearances, mon
 
 ## Architecture
 - `src/index.ts` — MCP server bootstrap, env var validation, request handlers
-- `src/api-client.ts` — HTTP client with HMAC SHA1 auth header generation
+- `src/api-client.ts` — HTTP client with HMAC SHA1 auth header generation; drops the auth headers on any cross-origin redirect
 - `src/tool-handlers.ts` — 18 tool handlers with input validation and error handling
 - `src/types.ts` — TypeScript interfaces and type guard functions for all tool args
 - `src/__tests__/` — Vitest tests for types, API client, and tool handlers
 
 ## Key constraints
 - `PODCASTINDEX_API_KEY` and `PODCASTINDEX_API_SECRET` env vars are needed for tool calls, but the server starts without them (lazy auth): warns on stderr, answers `tools/list`, and fails each `tools/call` with a clear McpError until both are set
-- Tests must mock HTTP — never hit the real Podcast Index API
+- Tests must mock HTTP — never hit the real Podcast Index API (loopback test servers are fine)
 - Uses MCP SDK 1.x and axios for HTTP; all 18 tools are read-only and declare `annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }` (enforced by a completeness test that pins the exact object)
 - CI runs `npm audit --audit-level=high` — keep dependencies free of high-severity advisories
 
@@ -26,11 +26,12 @@ npm test        # vitest run
 ```
 
 ## Testing
-4 test suites:
+5 test suites:
 - `types.test.ts` — Type guard validation (valid/invalid inputs for all 18 arg types)
 - `api-client.test.ts` — API endpoints, param forwarding, auth header generation (mocked axios)
 - `tool-handlers.test.ts` — Tool dispatch, error handling, TOOLS registry integrity
 - `errors.test.ts` — HTTP status to typed error mapping (`src/errors.ts`)
+- `redirect.test.ts` — real axios against two loopback servers: auth headers dropped on a cross-origin redirect, kept on a same-origin one
 
 ## Agent workflow
 - Always work on a branch. Never push directly to main.

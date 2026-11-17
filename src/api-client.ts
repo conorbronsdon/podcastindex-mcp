@@ -28,6 +28,39 @@ import type {
  */
 export const REQUEST_TIMEOUT_MS = 30_000;
 
+/** Request headers that carry or derive from the API credentials. */
+const AUTH_HEADER_NAMES = new Set(["x-auth-key", "x-auth-date", "authorization"]);
+
+/**
+ * Axios `beforeRedirect` hook: drops the auth headers when a redirect leaves
+ * the origin of the request that received it. follow-redirects (axios's Node
+ * redirect transport) only strips Authorization, Proxy-Authorization and
+ * Cookie on a cross-host hop; it would forward X-Auth-Key (the API key) and
+ * X-Auth-Date to whatever host the redirect names. Same-origin redirects keep
+ * every header so they still authenticate.
+ */
+export function stripAuthOnCrossOriginRedirect(
+  redirectOptions: { href?: string; headers?: Record<string, unknown> },
+  _responseDetails?: unknown,
+  requestDetails?: { url?: string }
+): void {
+  const headers = redirectOptions.headers;
+  if (!headers) return;
+  let sameOrigin = false;
+  try {
+    sameOrigin =
+      redirectOptions.href !== undefined &&
+      requestDetails?.url !== undefined &&
+      new URL(redirectOptions.href).origin === new URL(requestDetails.url).origin;
+  } catch {
+    sameOrigin = false; // unparseable URL: stripping is the fail-safe choice
+  }
+  if (sameOrigin) return;
+  for (const name of Object.keys(headers)) {
+    if (AUTH_HEADER_NAMES.has(name.toLowerCase())) delete headers[name];
+  }
+}
+
 export class PodcastIndexApiClient {
   private apiKey: string;
   private apiSecret: string;
@@ -43,6 +76,7 @@ export class PodcastIndexApiClient {
     this.api = axios.create({
       baseURL: "https://api.podcastindex.org/api/1.0",
       timeout: options.timeoutMs ?? REQUEST_TIMEOUT_MS,
+      beforeRedirect: stripAuthOnCrossOriginRedirect,
     });
   }
 
