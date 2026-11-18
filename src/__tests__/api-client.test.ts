@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
-import { PodcastIndexApiClient } from "../api-client.js";
+import { PodcastIndexApiClient, stripAuthOnCrossOriginRedirect } from "../api-client.js";
 import {
   AuthenticationError,
   RateLimitError,
@@ -39,6 +39,7 @@ describe("PodcastIndexApiClient", () => {
       expect(axios.default.create).toHaveBeenLastCalledWith({
         baseURL: "https://api.podcastindex.org/api/1.0",
         timeout: 30_000,
+        beforeRedirect: stripAuthOnCrossOriginRedirect,
       });
     });
 
@@ -48,6 +49,7 @@ describe("PodcastIndexApiClient", () => {
       expect(axios.default.create).toHaveBeenLastCalledWith({
         baseURL: "https://api.podcastindex.org/api/1.0",
         timeout: 250,
+        beforeRedirect: stripAuthOnCrossOriginRedirect,
       });
     });
   });
