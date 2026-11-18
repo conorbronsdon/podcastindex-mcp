@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import http from "http";
 import type { AddressInfo } from "net";
-import { PodcastIndexApiClient } from "../api-client.js";
+import { PodcastIndexApiClient, stripAuthOnCrossOriginRedirect } from "../api-client.js";
 
 // Real axios against two local servers (no mock, no network beyond loopback).
 // "origin" plays api.podcastindex.org; "other" is a different origin a
@@ -102,5 +102,45 @@ describe("redirects and auth headers", () => {
     expect(second["x-auth-date"]).toBe(first["x-auth-date"]);
     expect(second["authorization"]).toBe(first["authorization"]);
     expect(String(second["authorization"])).toMatch(/^[0-9a-f]{40}$/);
+  });
+});
+
+describe("stripAuthOnCrossOriginRedirect fail-safe branches", () => {
+  const authHeaders = () => ({
+    "X-Auth-Key": "test-key-not-real",
+    "X-Auth-Date": "1700000000",
+    Authorization: "test-hash-not-real",
+    "User-Agent": "PodcastIndexMCP/1.0",
+  });
+  const API = "https://api.podcastindex.org/api/1.0/search/byterm";
+
+  it("must-fire: an unparseable redirect href strips the auth headers", () => {
+    const opts = { href: "not a url", headers: authHeaders() };
+    stripAuthOnCrossOriginRedirect(opts, undefined, { url: API });
+    expect(opts.headers).toEqual({ "User-Agent": "PodcastIndexMCP/1.0" });
+  });
+
+  it("must-fire: missing request details strip the auth headers", () => {
+    const opts = { href: "https://api.podcastindex.org/api/1.0/other", headers: authHeaders() };
+    stripAuthOnCrossOriginRedirect(opts, undefined, undefined);
+    expect(opts.headers).toEqual({ "User-Agent": "PodcastIndexMCP/1.0" });
+  });
+
+  it("must-fire: a different port on the same host is another origin", () => {
+    const opts = { href: "https://api.podcastindex.org:8443/x", headers: authHeaders() };
+    stripAuthOnCrossOriginRedirect(opts, undefined, { url: API });
+    expect(opts.headers).toEqual({ "User-Agent": "PodcastIndexMCP/1.0" });
+  });
+
+  it("must-not-fire: a same-origin absolute href keeps every header", () => {
+    const opts = { href: "https://api.podcastindex.org/api/1.0/other", headers: authHeaders() };
+    stripAuthOnCrossOriginRedirect(opts, undefined, { url: API });
+    expect(opts.headers).toEqual(authHeaders());
+  });
+
+  it("must-not-fire: no headers object is a no-op, not a throw", () => {
+    const opts: { href: string; headers?: Record<string, unknown> } = { href: "https://elsewhere.example/" };
+    expect(() => stripAuthOnCrossOriginRedirect(opts, undefined, { url: API })).not.toThrow();
+    expect(opts.headers).toBeUndefined();
   });
 });
